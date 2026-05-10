@@ -1,5 +1,10 @@
 # Requirements: <Feature Name>
 
+> **Decisions and trade-offs only — no implementation.** Code snippets are allowed
+> only when they reduce ambiguity (e.g. a function signature, an example input/output,
+> a concrete error shape). If a snippet is doing anything more than that, it belongs
+> in `2-plan.md`, not here.
+
 ## Status
 
 - [ ] Draft
@@ -69,6 +74,24 @@ Scenario: <add one scenario per distinct behavior>
      Technical:  "Must not add a DB migration — the column already exists with a default."
      Business:   "Must ship before the Q2 demo on May 15."
      UX:         "Must match the existing row layout in the info modal — no redesign." -->
+
+## Assumptions
+
+<!-- What this document is taking as given about users, business rules, or scope.
+     Different from Constraints (hard rules from outside) and Open Questions (unresolved).
+     Each assumption must be **falsifiable** — something the reader could correct.
+     Generic filler ("users want a good experience") is not an assumption.
+
+     Format: what + why we're assuming it + what changes if it's wrong.
+
+     Example:
+     1. **Users only need the most recent open timestamp, not a history.** — based on
+        the original feature request; nobody asked for history.
+        If wrong: the data model needs an access_log table, not a single column.
+
+     2. **"Opening" means clicking into the file viewer, not previewing in a list.** —
+        list previews are passive, not deliberate access.
+        If wrong: the trigger surface expands and we'd record many more events. -->
 
 ## Open Questions
 

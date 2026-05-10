@@ -101,10 +101,10 @@ Rules:
 **Purpose:** Lightweight flow for confirmed bugs.
 
 Stages (in order, no skipping):
-1. **Reproduce** — confirm the bug with a test or minimal repro case
-2. **Diagnose** — identify root cause, not just symptoms; state any assumptions about the cause
-3. **Fix** — minimal targeted change; do not refactor surrounding code
-4. **Validate** — run tests, confirm the fix doesn't regress anything
+1. **Reproduce** — if the repo has a test suite, write a failing test that captures the bug before doing anything else. If no suite exists or a test is not feasible, document a deterministic minimal repro (exact steps, inputs, observed vs. expected output) and state explicitly why a test isn't viable. If the bug cannot be reproduced at all, STOP and report — do not guess at a fix.
+2. **Diagnose** — identify the root cause, not the symptom. State the root cause in one sentence before proposing any fix. If you cannot, run /assume and surface what's missing.
+3. **Fix** — the minimum change that addresses the stated root cause. Do not refactor surrounding code, rename adjacent symbols, tidy formatting, or fix unrelated issues you notice along the way (note them, don't fix them).
+4. **Validate** — the failing test from Reproduce now passes, and the full suite is green. If Reproduce used a manual repro, walk it again and confirm the original symptom is gone.
 
 Stop points:
 - After Reproduce: if unable to reproduce, STOP and report
