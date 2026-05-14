@@ -13,6 +13,7 @@ These rules apply to every command. They are not suggestions.
 2. **Minimum code** — implement only what was asked. No extra abstractions, no "while I'm here" cleanups, no speculative flexibility, no error handling for impossible scenarios. Ask: "Would a senior engineer say this is overcomplicated?" If yes, simplify.
 3. **Surgical changes** — touch only the lines the task requires. Do not reformat, rename, or refactor adjacent code. Match existing style, even if you'd do it differently. Remove imports, variables, and functions that *your* changes made unused — do not remove pre-existing dead code unless asked. Test: every changed line should trace directly to the user's request.
 4. **Verify before moving on** — define what "done" looks like before you start. Transform vague tasks into verifiable goals: "Fix the bug" → "Write a test that reproduces it, then make it pass." Strong success criteria let you loop independently without constant clarification. A task isn't done until its verification passes.
+5. **Use the right channel for changes** — once `1-requirements.md` and `2-plan.md` are approved, they are read-only. To change them, use `/spec-amend`. When an ambiguity blocks execution, use `/impl-gap`. Never edit approved spec files silently.
 
 ---
 
@@ -45,12 +46,33 @@ Infer what you can from the code. Ask only about what the code cannot answer:
 - Non-goals that aren't visible in code
 - What "done" means for this team
 
+> For discovery-only without writing anything, use `/scan` instead. `/bootstrap --scan` is the shortcut that does scan + bootstrap in one.
+
 ⛔ **STOP. Present the full draft of `project-overview.md` and `conventions.md` for review before writing anything. Do not save files until both are explicitly approved.**
 
 After approval:
 - Write `.sdd/project-overview.md`
 - Update `.sdd/conventions.md` with confirmed stack and patterns
 - Update `CLAUDE.md` to reference `.sdd/project-overview.md`
+
+---
+
+### /scan
+**Purpose:** Discovery pass over an existing codebase. Writes no `.sdd/` files — produces a report only.
+
+Use when: you want to understand a project before committing to `/bootstrap`, or to refresh awareness of structural changes.
+
+Process:
+1. Read `package.json` / dependency manifests, environment files
+2. Scan directory structure, naming conventions, import patterns
+3. Identify ORM, router, state-management, auth, lint/format configs
+4. Detect existing patterns the agent should preserve (file layout, exports style, test structure)
+5. Write `scan-report.md` at repo root with findings — frameworks detected, observed conventions, open questions about intent
+
+Rules:
+- No file outside `scan-report.md` is created or modified
+- Report is advisory; nothing is enforced
+- If the user wants `.sdd/` populated from the scan, they re-run `/bootstrap --scan` (which uses this report as input)
 
 ---
 
@@ -65,6 +87,27 @@ Rules:
 - If something is ambiguous or surprising, name it explicitly
 - End with a clear summary and explicit options or recommendations
 - Do NOT proceed to implementation without explicit instruction
+
+---
+
+### /research
+**Purpose:** Targeted exploration that produces a non-binding research artifact.
+
+Use when: comparing frameworks, libraries, patterns, or architectures *before* drafting a plan. Separates exploration from commitment.
+
+Process:
+1. Read the relevant `specs/<feature>/1-requirements.md` to understand context
+2. Investigate options (web search if available, codebase scan, dependency analysis)
+3. Write `specs/<feature>/research-<topic>.md` with:
+   - **Options** — each candidate (framework, library, approach)
+   - **Pros and cons** — concrete tradeoffs, not generic ones
+   - **Current state** — latest version, maintenance status, community signals
+   - **Recommendation (non-binding)** — agent's pick with a one-line justification
+
+Rules:
+- The artifact is exploratory; `/spec-plan` decides what gets adopted
+- The agent does not write to `2-plan.md` from this command
+- Multiple `research-*.md` files per feature are fine (one per topic)
 
 ---
 
@@ -144,7 +187,27 @@ Process:
 4. Copy `specs/_template/3-tasks.md` → `specs/<name>/3-tasks.md`
 5. Replace `<Feature Name>` in each file title with the actual feature name
 
-Then: fill out `1-requirements.md` before running /spec-plan
+Then: fill out `1-requirements.md` before running /spec-clarify or /spec-plan.
+
+---
+
+### /spec-clarify
+**Purpose:** Structured clarification of a draft `1-requirements.md` before planning.
+
+Use when: a draft is complete but you suspect open ambiguities that would corrupt the plan.
+
+Process:
+1. Read `specs/<feature>/1-requirements.md`
+2. Generate a list of clarification questions, categorized:
+   - ⛔ **Blocking** — `/spec-plan` cannot start until answered
+   - ⚠️ **Non-blocking** — can be decided during planning with a reasonable default
+3. Present the questions to the user, wait for answers
+4. Record both questions and answers in a **Clarifications** section of `1-requirements.md` (append-only, dated)
+
+Rules:
+- `/spec-plan` must check for unanswered blocking questions and warn
+- Non-blocking questions can be left open if the plan documents the default chosen
+- This command modifies `1-requirements.md` only by appending to the Clarifications section — no other field is touched
 
 ---
 
@@ -155,11 +218,16 @@ Input: completed `specs/<name>/1-requirements.md`
 
 Process:
 1. Read requirements and acceptance criteria
-2. Run /assume — list every assumption about requirements, codebase state, and technical decisions; STOP and wait for confirmation before continuing
-3. Consider the simplest approach that satisfies the requirements; if you reject it, explain why
-4. Analyze codebase impact
-5. Define abort criteria: conditions under which tasks must stop and return to planning
-6. Draft technical plan in `specs/<name>/2-plan.md`
+2. Check Clarifications section — if blocking questions remain unanswered, STOP and run /spec-clarify
+3. Run /assume — list every assumption about requirements, codebase state, and technical decisions; STOP and wait for confirmation before continuing
+4. Consider the simplest approach that satisfies the requirements; if you reject it, explain why
+5. Analyze codebase impact
+6. Define abort criteria: conditions under which tasks must stop and return to planning
+7. Draft technical plan in `specs/<name>/2-plan.md`
+8. **Optionally**, when context warrants, emit additional artifacts alongside `2-plan.md`:
+   - `2a-data-model.md` — only if persistence is non-trivial (new tables, schemas, migrations)
+   - `2b-api-contracts.md` — only if new external HTTP/RPC/event contracts are introduced
+   - `2c-research.md` — only if outstanding research material from `/research` belongs in the plan
 
 ⛔ **STOP HERE. Do not write any code until the plan is explicitly approved.**
 
@@ -184,6 +252,8 @@ The plan must include:
 
 Input: approved `specs/<name>/2-plan.md`
 
+First action: invoke `sddx-workflow snapshot <name>` to capture the approved spec state in `.sdd/snapshots/<name>/<timestamp>/`. If the CLI is unavailable, skip silently.
+
 Rules:
 - One task at a time — complete it fully before moving to the next
 - **Before writing implementation code for each task: write the test that defines "done" first.** It must fail (red) before any implementation exists
@@ -191,26 +261,198 @@ Rules:
 - Do NOT batch tasks or run ahead
 - Each task touches only what it requires — no cleanup of adjacent code, no style fixes, no refactors of nearby functions
 - If you notice something broken or worth improving nearby, note it in the spec — do not fix it now
-- If a task reveals new scope, STOP and update the plan before continuing
+- If a task reveals a contradiction, ambiguity, or impossibility that blocks progress: STOP and run `/impl-gap`
+- If `/impl-gap` resolution requires changing the requirements or plan: escalate to `/spec-amend` — never edit approved specs directly
 
-Generates / updates: `specs/<name>/3-tasks.md` checklist
+Generates / updates: `specs/<name>/3-tasks.md` checklist.
+
+---
+
+### /impl-gap
+**Purpose:** Formal stop-and-report channel when implementation hits an ambiguity, contradiction, or technical impossibility.
+
+Use when: during `/spec-tasks`, a task cannot proceed because the spec is unclear, internally inconsistent, or technically infeasible as written.
+
+Process:
+1. STOP the current task — do not improvise a fix
+2. Append an entry to `specs/<feature>/impl-gaps.md`:
+
+```markdown
+## GAP-<NNN> — <date>
+- **Task:** T-<id> (<short description>)
+- **Problem:** <what the spec says vs. what's blocking>
+- **Impact:** <which tasks are blocked by this>
+- **Proposed resolution:** <agent's suggestion, non-binding>
+- **Action required:** <"Approval" if resolvable in-scope, "Escalate to /spec-amend" if spec must change>
+```
+
+3. Report the gap to the user and wait for direction
+4. If the resolution is approved as-is, document the decision in the gap entry and resume
+5. If the resolution requires spec changes, escalate via `/spec-amend` — the resulting CR ID is appended to the gap entry
+
+Rules:
+- Never modify `1-requirements.md` or `2-plan.md` from this command
+- The agent's proposed resolution is always non-binding — only the human decides
+- Multiple gaps per feature are normal; keep numbering monotonic
+
+---
+
+### /spec-amend
+**Purpose:** Documented change-request mechanism for post-approval changes to `1-requirements.md` or `2-plan.md`.
+
+Use when: after a spec has been approved, real-world discovery reveals that requirements or plan need to change. Edits to approved spec files are not allowed without an amendment.
+
+Process:
+1. Identify the trigger — typically an `/impl-gap` escalation or a user-initiated change
+2. Append an entry to `specs/<feature>/amendments.md`:
+
+```markdown
+## CR-<NNN> — <date>
+- **Trigger:** <user-requested | gap-<id> | review-finding>
+- **Motive:** <why this change is necessary>
+- **Change in requirements:** <what sections of 1-requirements.md change, and how>
+- **Change in plan:** <what sections of 2-plan.md change, and how>
+- **Affected tasks:** <T-XX, T-YY — tasks that may need to redo work or whose verification changes>
+- **Status:** Pending approval
+```
+
+3. ⛔ **STOP. Present the CR for approval — do not modify any other file yet.**
+4. After explicit approval:
+   - Apply the documented changes to `1-requirements.md` and `2-plan.md`
+   - Update CR status to "Approved" with the date
+   - If tasks are affected, update `3-tasks.md` accordingly (mark stale, add new)
+
+Rules:
+- One CR per logical change — do not bundle unrelated changes in a single CR
+- CR numbering is per-spec, not global (CR-001 in feature A is unrelated to CR-001 in feature B)
+- Rejected CRs stay in `amendments.md` with status "Rejected" and a one-line reason — never delete history
+
+---
+
+### /spec-restore
+**Purpose:** Restore a spec folder from a snapshot.
+
+Use when: an amendment or implementation step has corrupted `1-requirements.md`, `2-plan.md`, or `3-tasks.md`, and reverting is faster than re-amending.
+
+Process:
+1. Read available snapshots from `.sdd/snapshots/<feature>/` — present timestamps to the user
+2. Confirm which snapshot to restore (timestamp argument or interactive selection)
+3. Copy snapshot files over `specs/<feature>/1-requirements.md`, `2-plan.md`, `3-tasks.md`
+4. Report what was restored and what was lost (current state diff vs snapshot)
+
+Rules:
+- Snapshots are read-only by convention — never edit `.sdd/snapshots/` files
+- Restoring does NOT remove the snapshot; it can be restored again
+- If unsure which snapshot to restore, run `sddx-workflow snapshot <feature> --list` first
+
+---
+
+### /verify
+**Purpose:** Strict mechanical audit. Read-only. Produces a report. Does not modify code or specs.
+
+Use after `/spec-tasks` completes and before `/review`.
+
+Checks (deterministic, listed in the report):
+- All tasks in `3-tasks.md` are marked complete
+- Every goal (G1, G2…) in `1-requirements.md` has at least one task that references it and at least one observable artifact (file change, test, route)
+- Every acceptance scenario in `1-requirements.md` has a corresponding passing test
+- Test suite passes (full suite, not only new tests)
+- No files were modified outside the components listed in `2-plan.md` "Components Affected"
+- No outstanding `/impl-gap` entries marked unresolved
+- No outstanding `/spec-amend` CRs in "Pending approval" status
+
+Output: `specs/<feature>/verify-report.md` summarizing each check with pass/fail and evidence.
+
+Rules:
+- This command never modifies code, spec files, or tasks — output is the report only
+- If a check fails, the report names the failure and the artifact that should resolve it
+- `/verify` does not propose fixes — that is `/review`'s territory (or a new `/spec-amend` if the failure is structural)
 
 ---
 
 ### /review
-**Purpose:** Final audit before closing a spec or merging.
+**Purpose:** Lighter human-touch final pass after `/verify`.
 
-Checks:
-- All tasks in `3-tasks.md` are marked complete
-- Every goal (G1, G2…) in `1-requirements.md` is satisfied by the implementation
-- Every scenario in `1-requirements.md` has a test that covers it and passes
-- Tests pass (full suite, not just the new ones)
-- No leftover debug code or TODO comments
-- Conventions in `.sdd/conventions.md` are followed
-- No out-of-scope changes were introduced
-- No speculative features, unused abstractions, or "just in case" code
-- Every changed line traces directly to the user's request — if not, explain why
-- The implementation is the simplest one that satisfies the requirements — if it's more complex, justify it
+Use after `/verify` reports green (or after explicit acknowledgement of remaining warnings).
+
+Focus:
+- Qualitative reading of the implementation — clarity, naming, simplicity
+- Catch things mechanical checks miss: unclear variable names, leaky abstractions, copy-paste smell, comments that lie
+- Note minor follow-ups (not blockers — these can be filed as separate bugfix items)
+- Confirm that the implementation feels like the simplest one that satisfies the requirements
+
+Rules:
+- This is a recommendation-only pass — `/review` does not enforce anything
+- If `/review` finds a structural issue, escalate to `/spec-amend` instead of editing
+- Minor stylistic changes are okay to apply directly when scoped within a few lines; otherwise note them and let the user decide
+
+---
+
+### /spec-status
+**Purpose:** Show the state of all active specs.
+
+Process:
+1. List directories under `specs/` excluding `_template` and `_done`
+2. For each, infer current phase from file state:
+   - Only `1-requirements.md`: **drafting requirements**
+   - `2-plan.md` exists but unchecked: **awaiting plan approval**
+   - `2-plan.md` approved and `3-tasks.md` has incomplete tasks: **in /spec-tasks (N/M done)**
+   - All tasks complete, no `verify-report.md`: **awaiting /verify**
+   - `verify-report.md` present: **verified** or **review pending**
+3. Print a table: Feature | Phase | Progress | Outstanding (CRs, gaps)
+
+Rules:
+- This is a snapshot; no spec files are modified
+- Completed specs (moved to `_done/`) are not listed
+
+---
+
+### /spec-conflicts
+**Purpose:** Detect file-level conflicts between active specs.
+
+Process:
+1. For each active spec, read `2-plan.md` "Components Affected"
+2. Cross-reference: any file listed by two or more specs is a potential conflict
+3. Print a table: File | Specs touching it | Recommendation (sequence them, merge plans, or escalate)
+
+Rules:
+- Detection only — resolution is always human-decided
+- "Components Affected" is the source of truth; if a plan understates its surface, conflicts will be missed (user education, not enforcement)
+
+---
+
+### /spec-analyze
+**Purpose:** Cross-consistency analysis between requirements, plan, and tasks for a single spec.
+
+Process:
+1. Read `1-requirements.md`, `2-plan.md`, `3-tasks.md` for the target feature
+2. Run three checks:
+   - **Goal-to-task coverage:** each goal ID (G1, G2…) appears as a referenced goal in at least one task
+   - **Plan-to-task coverage:** each entry in "Components Affected" appears in at least one task's Changes field
+   - **Scope creep:** any task that does not reference a goal ID
+3. Write `specs/<feature>/analysis.md` with one section per check, naming concrete misses
+
+Rules:
+- Analysis does not modify any spec file
+- Re-runs overwrite the previous `analysis.md`
+- Output is advisory; the human decides whether to amend or accept the gap
+
+---
+
+### /conventions-sync
+**Purpose:** Refresh `.sdd/conventions.md` against current project state, preserving manual sections.
+
+Process:
+1. Scan: `package.json` (or equivalent), directory structure, naming patterns, lint/format configs, ORM/router/state-management library in use
+2. Identify sections of `conventions.md` marked `<!-- manual -->` — leave verbatim
+3. Regenerate auto-sections with current findings
+4. Present the diff for approval before writing — STOP for explicit confirmation
+5. After approval, write the updated `conventions.md`
+
+Rules:
+- Manual sections are never overwritten
+- Auto-sections always reflect current state, not historical
+- The diff is the contract: if the user does not approve, nothing changes
 
 ---
 
@@ -265,21 +507,93 @@ Rules for the message:
 
 ---
 
+## Snapshots
+
+Snapshots capture the state of `1-requirements.md`, `2-plan.md`, and `3-tasks.md` so they can be restored later.
+
+- **When:** automatically at the start of `/spec-tasks`. Manually via `sddx-workflow snapshot <feature>`.
+- **Where:** `.sdd/snapshots/<feature>/<ISO-8601-timestamp>/`.
+- **Lifecycle:** snapshots are immutable by convention. The agent never modifies them. Restore via `/spec-restore` or by copying back manually.
+- **List existing:** `sddx-workflow snapshot <feature> --list`.
+- **Independence from git:** snapshots do not require git, do not commit anything, and do not affect history.
+
+---
+
 ## Ceremony Levels
+
+The `npx sddx-workflow init` prompt asks for a ceremony level. The choice lives in `.sdd/config.json` and informs which features apply by default.
+
+| Edition | Use when | Required flow for features | Optional features available |
+|---|---|---|---|
+| **Solo / MVP** | Single developer, prototyping, exploratory work | `/spec-plan` → `/spec-tasks` → `/finish` | `/spec-status`, `/research`, snapshots |
+| **Team / Product** *(default)* | Cross-functional team, real product, normal cadence | `/spec-new` → `/spec-plan` → `/spec-tasks` → `/verify` → `/review` → `/finish` | All commands; amendments encouraged on scope changes |
+| **Enterprise** | Compliance, audit trails, multi-team | All Team flow + mandatory `/spec-clarify` before `/spec-plan` + mandatory `/spec-amend` for any post-approval change + automatic snapshots before every spec-changing command |
 
 | Change size | Required flow |
 |---|---|
 | Typo / comment | Direct — no ceremony |
 | Bug (< ~50 lines, 1 file) | /bugfix → /finish |
 | Refactor (no behavior change) | /refactor → /finish |
-| Feature | /spec-new → /spec-plan → /spec-tasks → /review → /finish |
-| Architecture change | /spec-new → /spec-plan (mandatory human review) → /spec-tasks → /review → /finish |
+| Feature (Solo) | /spec-plan → /spec-tasks → /finish |
+| Feature (Team) | /spec-new → /spec-plan → /spec-tasks → /verify → /review → /finish |
+| Feature (Enterprise) | /spec-new → /spec-clarify → /spec-plan → /spec-tasks → /verify → /review → /finish |
+| Architecture change | /spec-new → /spec-clarify → /spec-plan (mandatory human review) → /spec-tasks → /verify → /review → /finish |
+| Post-approval change | /spec-amend → (resume with current phase) |
+
+---
+
+## Per-Phase Permissions
+
+This table formalizes what the agent may read, edit, or create in each phase. Documentation, not runtime enforcement — but the agent is expected to comply.
+
+| Command | Read specs | Edit specs | Edit code | Create files |
+|---|---|---|---|---|
+| /bootstrap, /scan | ✓ | ✗ | ✗ | Only docs / report files |
+| /ask, /research | ✓ | ✗ | ✗ | Only research / report files |
+| /assume | ✓ | ✗ | ✗ | None (output is conversational) |
+| /spec-new | ✓ | ✓ (initial drafts only) | ✗ | Spec scaffold only |
+| /spec-clarify | ✓ | ✓ (only Clarifications section) | ✗ | None |
+| /spec-plan | ✓ | ✓ (only `2-plan.md` and optional 2a/2b/2c) | ✗ | Plan + artifacts |
+| /spec-tasks | ✓ | ✓ (only `3-tasks.md` checklist) | ✓ | Code, tests, new modules |
+| /impl-gap | ✓ | ✓ (only `impl-gaps.md`) | ✗ | Gap report only |
+| /spec-amend | ✓ | ✓ (with CR approval) | ✗ | CR record |
+| /spec-restore | ✓ | ✓ (overwrite from snapshot) | ✗ | None |
+| /verify | ✓ | ✗ | ✗ | Only `verify-report.md` |
+| /review | ✓ | ✗ | ✓ (only minor, scoped) | None |
+| /spec-status, /spec-conflicts | ✓ | ✗ | ✗ | None (output is conversational) |
+| /spec-analyze | ✓ | ✗ | ✗ | Only `analysis.md` |
+| /bugfix | ✓ | ✗ | ✓ | Tests + fix |
+| /refactor | ✓ | ✗ | ✓ | None |
+| /conventions-sync | ✓ | ✗ | ✗ | Only `conventions.md` (with diff approval) |
+| /finish | ✓ | ✗ | ✗ | None — staging + commit message only |
+
+---
+
+## Anti-Patterns
+
+The agent must not:
+
+1. **Edit approved spec files silently.** `1-requirements.md` and `2-plan.md` after approval are read-only; use `/spec-amend`.
+2. **Improvise a fix when the spec is ambiguous.** Use `/impl-gap` and stop.
+3. **Mark tasks complete without an observable artifact.** A code change, a test, a file — something must back the checkmark.
+4. **Refactor adjacent code during a task.** Note it for later; do not change scope.
+5. **Add a dependency without surfacing it in `/research` or `/assume`.** Surprise dependencies are scope creep.
+6. **Batch tasks.** One task at a time during `/spec-tasks` — finish, verify, then move on.
+7. **Skip `/verify` to jump straight to `/finish`.** Mechanical checks exist to catch real problems.
+8. **Make decisions about what is "good enough" structurally.** Structure is a human decision; flag it, do not absorb it.
+9. **Modify `.sdd/snapshots/` files.** They are the safety net; corrupting them defeats the purpose.
+10. **Move a spec to `_done/` before `/verify` and `/review` pass.** A spec is done when both have closed cleanly.
+
+---
 
 ## Stop Points (Non-Negotiable)
 
-1. **Unclear requirements** — stop, ask via /ask, do not assume
+1. **Unclear requirements** — stop, ask via /ask or run /spec-clarify, do not assume
 2. **Unvalidated assumptions** — run /assume before /spec-plan; if a confirmed assumption turns out false mid-execution, stop and re-plan
 3. **After /spec-plan** — never proceed to tasks without explicit approval
 4. **Abort criterion triggered** — when any condition in the plan's Abort Criteria is met, stop immediately and return to /spec-plan
 5. **Scope creep detected** — stop, report, get a decision before continuing
 6. **Test failure during /spec-tasks** — stop, fix the failure before the next task
+7. **Implementation gap encountered** — run /impl-gap and stop; do not improvise
+8. **Spec change needed** — run /spec-amend; never edit approved files directly
+9. **Pending CR or unresolved gap** — `/verify` will not pass; resolve before continuing

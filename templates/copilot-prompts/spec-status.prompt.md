@@ -1,0 +1,8 @@
+---
+description: Show state of all active specs — phase, progress, outstanding CRs and gaps
+mode: agent
+---
+
+Execute the /spec-status command defined in .sdd/workflow.md.
+
+List directories under specs/ excluding _template and _done. For each: feature name, current phase, progress (N/M tasks), outstanding CRs or unresolved gaps. Do not modify any file.

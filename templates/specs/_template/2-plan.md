@@ -39,6 +39,13 @@
      — rejected because it would bump updated_at on every read, corrupting
      the 'modified' timestamp shown to users." -->
 
+<!-- Optional artifacts: if this plan needs more depth in a specific area, /spec-plan
+     may produce additional files alongside this one — reference them here:
+       - 2a-data-model.md   — when persistence is non-trivial (schemas, migrations, ER)
+       - 2b-api-contracts.md — when new external HTTP/RPC/event contracts are introduced
+       - 2c-research.md      — when outstanding /research output belongs in the plan
+     If unused, just delete this comment. -->
+
 ## Tradeoffs
 
 <!-- Conscious sacrifices the chosen approach makes. Only include if they exist.
@@ -103,6 +110,21 @@
      - A component listed in "Components Affected" has been significantly refactored
        since this plan was written, changing its interface
      - A task requires touching files not listed here -->
+
+## Implementation Gaps
+
+<!-- Appended by /impl-gap when a task hits a blocking ambiguity, contradiction, or
+     technical impossibility. The agent never modifies this section while executing
+     a task — it appends a new GAP-NNN entry and stops for human direction.
+
+     Format:
+     ## GAP-NNN — YYYY-MM-DD
+     - Task: T-XX (short description)
+     - Problem: what the spec says vs. what's blocking
+     - Impact: which tasks are blocked
+     - Proposed resolution: agent's suggestion (non-binding)
+     - Action required: "Approval" or "Escalate to /spec-amend"
+     - Resolution: filled in after human direction (and CR-NNN reference if applicable) -->
 
 ## Verification
 

@@ -1,8 +1,8 @@
 ---
 name: review
-description: Final audit before closing a spec or merging. Use after all spec tasks are complete to verify goals are met, tests pass, and no scope creep was introduced.
+description: Lighter human-touch final pass after /verify reports green. Qualitative reading — clarity, naming, simplicity, leaky abstractions, comments that lie. Notes minor follow-ups; mechanical checks live in /verify.
 ---
 
 Execute the /review command defined in .sdd/workflow.md.
 
-Audit the spec before closing. Verify all goals (G1, G2…) are satisfied, every acceptance scenario has a passing test, no out-of-scope changes were introduced, and the implementation is the simplest that meets requirements.
+Read the implementation qualitatively. Surface unclear naming, leaky abstractions, copy-paste smell, and comments that lie. Note minor follow-ups; do not enforce mechanical checks (that is /verify's job). If a structural issue is found, escalate to /spec-amend.

@@ -1,10 +1,11 @@
 import path from 'path';
 import fs from 'fs';
-import { checkbox } from '@inquirer/prompts';
+import { checkbox, select } from '@inquirer/prompts';
 import { ensureDir, copyTemplate } from '../utils';
 
 interface InitOptions {
   force?: boolean;
+  existing?: boolean;
 }
 
 const CORE_FILES: Array<{ src: string; dest: string }> = [
@@ -25,22 +26,51 @@ interface Provider {
   files: Array<{ src: string; dest: string }>;
 }
 
+const COMMAND_NAMES = [
+  'bootstrap',
+  'ask',
+  'assume',
+  'bugfix',
+  'refactor',
+  'spec-new',
+  'spec-plan',
+  'spec-tasks',
+  'review',
+  'finish',
+  'spec-amend',
+  'impl-gap',
+  'spec-restore',
+  'research',
+  'verify',
+  'scan',
+  'conventions-sync',
+  'spec-status',
+  'spec-conflicts',
+  'spec-clarify',
+  'spec-analyze',
+] as const;
+
+const claudeCommandFiles = COMMAND_NAMES.map(name => ({
+  src: `claude-commands/${name}.md`,
+  dest: `.claude/commands/${name}.md`,
+}));
+
+const copilotPromptFiles = COMMAND_NAMES.map(name => ({
+  src: `copilot-prompts/${name}.prompt.md`,
+  dest: `.github/prompts/${name}.prompt.md`,
+}));
+
+const codexSkillDirs = COMMAND_NAMES.map(name => `.agents/skills/${name}`);
+const codexSkillFiles = COMMAND_NAMES.map(name => ({
+  src: `codex-skills/${name}/SKILL.md`,
+  dest: `.agents/skills/${name}/SKILL.md`,
+}));
+
 const PROVIDERS: Record<ProviderId, Provider> = {
   'claude-code': {
     name: 'Claude Code',
     dirs: ['.claude/commands'],
-    files: [
-      { src: 'claude-commands/bootstrap.md', dest: '.claude/commands/bootstrap.md' },
-      { src: 'claude-commands/ask.md', dest: '.claude/commands/ask.md' },
-      { src: 'claude-commands/assume.md', dest: '.claude/commands/assume.md' },
-      { src: 'claude-commands/bugfix.md', dest: '.claude/commands/bugfix.md' },
-      { src: 'claude-commands/refactor.md', dest: '.claude/commands/refactor.md' },
-      { src: 'claude-commands/spec-new.md', dest: '.claude/commands/spec-new.md' },
-      { src: 'claude-commands/spec-plan.md', dest: '.claude/commands/spec-plan.md' },
-      { src: 'claude-commands/spec-tasks.md', dest: '.claude/commands/spec-tasks.md' },
-      { src: 'claude-commands/review.md', dest: '.claude/commands/review.md' },
-      { src: 'claude-commands/finish.md', dest: '.claude/commands/finish.md' },
-    ],
+    files: claudeCommandFiles,
   },
   cursor: {
     name: 'Cursor',
@@ -60,45 +90,16 @@ const PROVIDERS: Record<ProviderId, Provider> = {
     name: 'GitHub Copilot',
     dirs: ['.github/prompts'],
     files: [
-      { src: 'copilot-prompts/bootstrap.prompt.md', dest: '.github/prompts/bootstrap.prompt.md' },
-      { src: 'copilot-prompts/ask.prompt.md', dest: '.github/prompts/ask.prompt.md' },
-      { src: 'copilot-prompts/assume.prompt.md', dest: '.github/prompts/assume.prompt.md' },
-      { src: 'copilot-prompts/bugfix.prompt.md', dest: '.github/prompts/bugfix.prompt.md' },
-      { src: 'copilot-prompts/refactor.prompt.md', dest: '.github/prompts/refactor.prompt.md' },
-      { src: 'copilot-prompts/spec-new.prompt.md', dest: '.github/prompts/spec-new.prompt.md' },
-      { src: 'copilot-prompts/spec-plan.prompt.md', dest: '.github/prompts/spec-plan.prompt.md' },
-      { src: 'copilot-prompts/spec-tasks.prompt.md', dest: '.github/prompts/spec-tasks.prompt.md' },
-      { src: 'copilot-prompts/review.prompt.md', dest: '.github/prompts/review.prompt.md' },
-      { src: 'copilot-prompts/finish.prompt.md', dest: '.github/prompts/finish.prompt.md' },
+      ...copilotPromptFiles,
       { src: 'copilot-instructions.md', dest: '.github/copilot-instructions.md' },
     ],
   },
   codex: {
     name: 'OpenAI Codex',
-    dirs: [
-      '.agents/skills/bootstrap',
-      '.agents/skills/ask',
-      '.agents/skills/assume',
-      '.agents/skills/bugfix',
-      '.agents/skills/refactor',
-      '.agents/skills/spec-new',
-      '.agents/skills/spec-plan',
-      '.agents/skills/spec-tasks',
-      '.agents/skills/review',
-      '.agents/skills/finish',
-    ],
+    dirs: codexSkillDirs,
     files: [
       { src: 'AGENTS.md', dest: 'AGENTS.md' },
-      { src: 'codex-skills/bootstrap/SKILL.md', dest: '.agents/skills/bootstrap/SKILL.md' },
-      { src: 'codex-skills/ask/SKILL.md', dest: '.agents/skills/ask/SKILL.md' },
-      { src: 'codex-skills/assume/SKILL.md', dest: '.agents/skills/assume/SKILL.md' },
-      { src: 'codex-skills/bugfix/SKILL.md', dest: '.agents/skills/bugfix/SKILL.md' },
-      { src: 'codex-skills/refactor/SKILL.md', dest: '.agents/skills/refactor/SKILL.md' },
-      { src: 'codex-skills/spec-new/SKILL.md', dest: '.agents/skills/spec-new/SKILL.md' },
-      { src: 'codex-skills/spec-plan/SKILL.md', dest: '.agents/skills/spec-plan/SKILL.md' },
-      { src: 'codex-skills/spec-tasks/SKILL.md', dest: '.agents/skills/spec-tasks/SKILL.md' },
-      { src: 'codex-skills/review/SKILL.md', dest: '.agents/skills/review/SKILL.md' },
-      { src: 'codex-skills/finish/SKILL.md', dest: '.agents/skills/finish/SKILL.md' },
+      ...codexSkillFiles,
     ],
   },
   gemini: {
@@ -119,6 +120,79 @@ const PROVIDERS: Record<ProviderId, Provider> = {
 
 const ALL_PROVIDER_IDS = Object.keys(PROVIDERS) as ProviderId[];
 
+type Ceremony = 'solo' | 'team' | 'enterprise';
+
+interface CeremonyFeatures {
+  amendments: boolean;
+  snapshots: boolean;
+  implGaps: boolean;
+  research: boolean;
+  verify: boolean;
+  clarify: boolean;
+}
+
+interface CeremonyConfig {
+  ceremony: Ceremony;
+  features: CeremonyFeatures;
+}
+
+const CEREMONY_DEFAULTS: Record<Ceremony, CeremonyFeatures> = {
+  solo: {
+    amendments: false,
+    snapshots: false,
+    implGaps: true,
+    research: true,
+    verify: false,
+    clarify: false,
+  },
+  team: {
+    amendments: true,
+    snapshots: true,
+    implGaps: true,
+    research: true,
+    verify: true,
+    clarify: false,
+  },
+  enterprise: {
+    amendments: true,
+    snapshots: true,
+    implGaps: true,
+    research: true,
+    verify: true,
+    clarify: true,
+  },
+};
+
+async function selectCeremony(): Promise<Ceremony> {
+  if (!process.stdout.isTTY) {
+    return 'team';
+  }
+
+  const choice = await select<Ceremony>({
+    message: 'Ceremony level:',
+    default: 'team',
+    choices: [
+      {
+        name: 'Solo / MVP   — minimal: /spec-plan, /spec-tasks, /finish',
+        value: 'solo',
+        description: 'Single developer, prototypes, exploratory work',
+      },
+      {
+        name: 'Team / Product   — standard: full feature flow + /verify + /review',
+        value: 'team',
+        description: 'Cross-functional team, real product, normal cadence',
+      },
+      {
+        name: 'Enterprise   — full: + mandatory /spec-clarify + mandatory /spec-amend on changes',
+        value: 'enterprise',
+        description: 'Compliance, audit trails, multi-team',
+      },
+    ],
+  });
+
+  return choice;
+}
+
 async function selectProviders(): Promise<ProviderId[]> {
   if (!process.stdout.isTTY) {
     return ALL_PROVIDER_IDS;
@@ -137,14 +211,63 @@ async function selectProviders(): Promise<ProviderId[]> {
   return selected as ProviderId[];
 }
 
+const CEREMONY_HEADERS: Record<Ceremony, string> = {
+  solo: `> **Active ceremony level: Solo / MVP.**
+> Required flow: \`/spec-plan\` → \`/spec-tasks\` → \`/finish\`
+> The rest of this file documents the full protocol. The sections relevant to your level are: Execution Principles, /spec-plan, /spec-tasks, /finish, Stop Points. Other commands are available opt-in.
+`,
+  team: `> **Active ceremony level: Team / Product.**
+> Required flow: \`/spec-new\` → \`/spec-plan\` → \`/spec-tasks\` → \`/verify\` → \`/review\` → \`/finish\`
+> Use \`/spec-amend\` for any post-approval change and \`/impl-gap\` whenever a task is blocked.
+`,
+  enterprise: `> **Active ceremony level: Enterprise.**
+> Required flow: \`/spec-new\` → \`/spec-clarify\` → \`/spec-plan\` → \`/spec-tasks\` → \`/verify\` → \`/review\` → \`/finish\`
+> Mandatory: \`/spec-clarify\` before \`/spec-plan\`, \`/spec-amend\` for every post-approval change, automatic snapshots before \`/spec-tasks\`.
+`,
+};
+
+function injectCeremonyHeader(cwd: string, ceremony: Ceremony): void {
+  const target = path.join(cwd, '.sdd/workflow.md');
+  if (!fs.existsSync(target)) return;
+  const content = fs.readFileSync(target, 'utf8');
+  if (content.includes('> **Active ceremony level:')) return;
+
+  const header = CEREMONY_HEADERS[ceremony];
+  const lines = content.split('\n');
+  const firstHeading = lines.findIndex(line => line.startsWith('# '));
+  if (firstHeading < 0) return;
+
+  const before = lines.slice(0, firstHeading + 1);
+  const after = lines.slice(firstHeading + 1);
+  const merged = [...before, '', header.trimEnd(), ...after].join('\n');
+  fs.writeFileSync(target, merged, 'utf8');
+  console.log(`  patch     .sdd/workflow.md (ceremony: ${ceremony})`);
+}
+
+function writeConfig(cwd: string, ceremony: Ceremony, force?: boolean): void {
+  const dest = path.join(cwd, '.sdd/config.json');
+  const existed = fs.existsSync(dest);
+  if (existed && !force) {
+    console.log(`  skip     ${dest}`);
+    return;
+  }
+  const config: CeremonyConfig = {
+    ceremony,
+    features: CEREMONY_DEFAULTS[ceremony],
+  };
+  fs.writeFileSync(dest, JSON.stringify(config, null, 2) + '\n', 'utf8');
+  console.log(`  ${existed ? 'overwrite' : 'create  '}  ${dest}`);
+}
+
 export async function initCommand(options: InitOptions): Promise<void> {
   const cwd = process.cwd();
-  const { force } = options;
+  const { force, existing } = options;
 
   console.log('');
-  console.log('  SDD Workflow — initializing');
+  console.log(`  SDD Workflow — initializing${existing ? ' (existing project mode)' : ''}`);
   console.log('');
 
+  const ceremony = await selectCeremony();
   const selectedProviders = await selectProviders();
 
   console.log('');
@@ -166,6 +289,9 @@ export async function initCommand(options: InitOptions): Promise<void> {
     copyTemplate(file.src, path.join(cwd, file.dest), force);
   }
 
+  injectCeremonyHeader(cwd, ceremony);
+  writeConfig(cwd, ceremony, force);
+
   for (const id of selectedProviders) {
     for (const file of PROVIDERS[id].files) {
       copyTemplate(file.src, path.join(cwd, file.dest), force);
@@ -173,10 +299,15 @@ export async function initCommand(options: InitOptions): Promise<void> {
   }
 
   console.log('');
-  console.log('  Done. Next steps:');
+  console.log(`  Done. Ceremony: ${ceremony}. Next steps:`);
   console.log('');
-  console.log('  1. Run /bootstrap to populate project context (new project)');
-  console.log('     or /bootstrap --scan to let the agent analyze the codebase (existing project)');
+  if (existing) {
+    console.log('  1. Run /scan to discover the codebase (no .sdd/ writes — produces scan-report.md)');
+    console.log('     then /bootstrap --scan to populate .sdd/project-overview.md and .sdd/conventions.md');
+  } else {
+    console.log('  1. Run /bootstrap to populate project context (new project)');
+    console.log('     or /bootstrap --scan to let the agent analyze the codebase (existing project)');
+  }
   if (!claudeExisted) {
     console.log('  2. CLAUDE.md was created — share it with your AI agent as context');
   } else {

@@ -102,3 +102,14 @@ Scenario: <add one scenario per distinct behavior>
 
      ⚠️ Non-blocking — can be decided during planning with a reasonable default:
         Should the timestamp be relative ("3 days ago") or absolute ("Apr 12, 14:30")? -->
+
+## Clarifications
+
+<!-- Populated by /spec-clarify (pre-plan) or appended by /spec-amend (post-approval).
+     Each entry is dated and identifies the question and the resolution.
+
+     Example:
+     - **2026-05-14** — Q: Does folder navigation count as "opening" a file? → A: No. Only files opened in the viewer count. Trigger surface stays narrow.
+     - **2026-05-14** — Q: Timestamp format? → A: Relative ("3 days ago"); switch to absolute on hover.
+-->
+

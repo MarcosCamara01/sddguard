@@ -1,5 +1,5 @@
 Execute the /review command defined in .sdd/workflow.md.
 
-Audit the spec before closing. Verify all goals (G1, G2…) are satisfied, every acceptance scenario has a passing test, no out-of-scope changes were introduced, and the implementation is the simplest that meets requirements.
+Lighter human-touch final pass — runs AFTER /verify has reported green. Read the implementation qualitatively: clarity, naming, simplicity, leaky abstractions, copy-paste smell, comments that lie. Note minor follow-ups; don't enforce mechanical checks (that's /verify's job). If a structural issue is found, escalate to /spec-amend instead of editing.
 
 Spec: $ARGUMENTS
