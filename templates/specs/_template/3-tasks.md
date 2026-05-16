@@ -11,7 +11,7 @@ Plan approved: <!-- date -->
 - One task at a time — finish it completely before moving on
 - Write the test first — it must fail (red) before any implementation; implement until green; then run the full suite
 - Each task touches only what's needed — no cleanup of adjacent code
-- If a task reveals new scope, STOP and update 2-plan.md before continuing
+- If a task reveals ambiguity, contradiction, impossibility, or new scope, STOP and run /impl-gap. If requirements or plan must change, escalate to /spec-amend before editing approved spec files.
 
 ---
 
@@ -49,5 +49,6 @@ Plan approved: <!-- date -->
 
 - [ ] All tasks done
 - [ ] Every acceptance scenario in 1-requirements.md covered by a passing test
+- [ ] /verify completed
 - [ ] /review completed
 - [ ] Spec moved to `specs/_done/<name>/`

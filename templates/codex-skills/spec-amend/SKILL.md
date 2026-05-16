@@ -5,4 +5,6 @@ description: Documented change-request mechanism for post-approval changes to a 
 
 Execute the /spec-amend command defined in .sdd/workflow.md.
 
-A spec change after approval requires a Change Request. Append a CR entry to specs/<feature>/amendments.md with motive, requirement changes, plan changes, affected tasks, and status "Pending approval". Stop for explicit approval before propagating any change.
+Usage: /spec-amend <feature> <change-summary>
+
+A spec change after approval requires a Change Request. Create specs/<feature>/amendments.md from the template if missing, then append a CR entry with motive, requirement changes, plan changes, affected tasks, and status "Pending approval". Stop for explicit approval before propagating any change.

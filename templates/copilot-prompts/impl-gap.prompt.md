@@ -5,4 +5,6 @@ mode: agent
 
 Execute the /impl-gap command defined in .sdd/workflow.md.
 
-STOP execution. Append a GAP entry to specs/${input:specName}/impl-gaps.md with current task, problem, impact, proposed resolution, and action required. Wait for human direction. If the gap requires changing the spec, escalate to /spec-amend.
+Usage: /impl-gap ${input:specName}
+
+STOP execution. Create specs/${input:specName}/impl-gaps.md from the template if missing, then append a GAP entry with current task, problem, impact, proposed resolution, action required, and resolution placeholder. Wait for human direction. If the gap requires changing the spec, escalate to /spec-amend.

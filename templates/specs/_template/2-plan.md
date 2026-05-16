@@ -111,20 +111,12 @@
        since this plan was written, changing its interface
      - A task requires touching files not listed here -->
 
-## Implementation Gaps
+## Gap Handling
 
-<!-- Appended by /impl-gap when a task hits a blocking ambiguity, contradiction, or
-     technical impossibility. The agent never modifies this section while executing
-     a task — it appends a new GAP-NNN entry and stops for human direction.
-
-     Format:
-     ## GAP-NNN — YYYY-MM-DD
-     - Task: T-XX (short description)
-     - Problem: what the spec says vs. what's blocking
-     - Impact: which tasks are blocked
-     - Proposed resolution: agent's suggestion (non-binding)
-     - Action required: "Approval" or "Escalate to /spec-amend"
-     - Resolution: filled in after human direction (and CR-NNN reference if applicable) -->
+<!-- Implementation-time ambiguities, contradictions, or technical impossibilities
+     are NOT recorded in this plan. Run /impl-gap and append to
+     specs/<feature>/impl-gaps.md. If the resolution changes requirements or plan,
+     escalate via /spec-amend before editing approved spec files. -->
 
 ## Verification
 

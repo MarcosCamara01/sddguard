@@ -93,12 +93,14 @@ Rules:
 ### /research
 **Purpose:** Targeted exploration that produces a non-binding research artifact.
 
+Usage: `/research <feature> <topic>`
+
 Use when: comparing frameworks, libraries, patterns, or architectures *before* drafting a plan. Separates exploration from commitment.
 
 Process:
 1. Read the relevant `specs/<feature>/1-requirements.md` to understand context
 2. Investigate options (web search if available, codebase scan, dependency analysis)
-3. Write `specs/<feature>/research-<topic>.md` with:
+3. Write `specs/<feature>/research-<topic>.md` (slugify `<topic>` for the filename) with:
    - **Options** — each candidate (framework, library, approach)
    - **Pros and cons** — concrete tradeoffs, not generic ones
    - **Current state** — latest version, maintenance status, community signals
@@ -272,11 +274,14 @@ Generates / updates: `specs/<name>/3-tasks.md` checklist.
 ### /impl-gap
 **Purpose:** Formal stop-and-report channel when implementation hits an ambiguity, contradiction, or technical impossibility.
 
+Usage: `/impl-gap <feature>`
+
 Use when: during `/spec-tasks`, a task cannot proceed because the spec is unclear, internally inconsistent, or technically infeasible as written.
 
 Process:
 1. STOP the current task — do not improvise a fix
-2. Append an entry to `specs/<feature>/impl-gaps.md`:
+2. Create `specs/<feature>/impl-gaps.md` from the template if it does not exist
+3. Append an entry to `specs/<feature>/impl-gaps.md`:
 
 ```markdown
 ## GAP-<NNN> — <date>
@@ -285,14 +290,16 @@ Process:
 - **Impact:** <which tasks are blocked by this>
 - **Proposed resolution:** <agent's suggestion, non-binding>
 - **Action required:** <"Approval" if resolvable in-scope, "Escalate to /spec-amend" if spec must change>
+- **Resolution:** <filled only after human direction>
 ```
 
-3. Report the gap to the user and wait for direction
-4. If the resolution is approved as-is, document the decision in the gap entry and resume
-5. If the resolution requires spec changes, escalate via `/spec-amend` — the resulting CR ID is appended to the gap entry
+4. Report the gap to the user and wait for direction
+5. If the resolution is approved as-is, document the decision in the gap entry and resume
+6. If the resolution requires spec changes, escalate via `/spec-amend` — the resulting CR ID is appended to the gap entry
 
 Rules:
 - Never modify `1-requirements.md` or `2-plan.md` from this command
+- Never record implementation gaps inside `2-plan.md`; `impl-gaps.md` is the only gap log
 - The agent's proposed resolution is always non-binding — only the human decides
 - Multiple gaps per feature are normal; keep numbering monotonic
 - **Solo mode exception:** If `.sdd/config.json` sets `"amendments": false` (Solo ceremony), and the gap requires a spec change, skip the formal CR process. Instead, present the proposed change directly to the user, wait for explicit approval, then apply it and document the decision in the gap entry under a **Resolution** field. The change must still be user-approved — "no formal CR" does not mean "decide silently".
@@ -302,11 +309,14 @@ Rules:
 ### /spec-amend
 **Purpose:** Documented change-request mechanism for post-approval changes to `1-requirements.md` or `2-plan.md`.
 
+Usage: `/spec-amend <feature> <change-summary>`
+
 Use when: after a spec has been approved, real-world discovery reveals that requirements or plan need to change. Edits to approved spec files are not allowed without an amendment.
 
 Process:
 1. Identify the trigger — typically an `/impl-gap` escalation or a user-initiated change
-2. Append an entry to `specs/<feature>/amendments.md`:
+2. Create `specs/<feature>/amendments.md` from the template if it does not exist
+3. Append an entry to `specs/<feature>/amendments.md`:
 
 ```markdown
 ## CR-<NNN> — <date>
@@ -318,8 +328,8 @@ Process:
 - **Status:** Pending approval
 ```
 
-3. ⛔ **STOP. Present the CR for approval — do not modify any other file yet.**
-4. After explicit approval:
+4. ⛔ **STOP. Present the CR for approval — do not modify any other file yet.**
+5. After explicit approval:
    - Apply the documented changes to `1-requirements.md` and `2-plan.md`
    - Update CR status to "Approved" with the date
    - If tasks are affected, update `3-tasks.md` accordingly (mark stale, add new)
@@ -334,11 +344,13 @@ Rules:
 ### /spec-restore
 **Purpose:** Restore a spec folder from a snapshot.
 
+Usage: `/spec-restore <feature> [timestamp]`
+
 Use when: an amendment or implementation step has corrupted `1-requirements.md`, `2-plan.md`, or `3-tasks.md`, and reverting is faster than re-amending.
 
 Process:
-1. Read available snapshots from `.sdd/snapshots/<feature>/` — present timestamps to the user
-2. Confirm which snapshot to restore (timestamp argument or interactive selection)
+1. Read available snapshots from `.sdd/snapshots/<feature>/` — present timestamps to the user if no timestamp was supplied
+2. Confirm which snapshot to restore (timestamp argument or interactive selection) before overwriting anything
 3. Copy snapshot files over `specs/<feature>/1-requirements.md`, `2-plan.md`, `3-tasks.md`
 4. Report what was restored and what was lost (current state diff vs snapshot)
 

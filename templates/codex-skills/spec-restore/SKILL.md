@@ -5,4 +5,6 @@ description: Restore a spec folder from a snapshot in .sdd/snapshots/. Use when 
 
 Execute the /spec-restore command defined in .sdd/workflow.md.
 
-List available timestamps for the feature, confirm the target, then copy snapshot files over 1-requirements.md, 2-plan.md, 3-tasks.md. Report what was restored and what was lost.
+Usage: /spec-restore <feature> [timestamp]
+
+If no timestamp is supplied, list available timestamps. Confirm the target before overwriting, then copy snapshot files over 1-requirements.md, 2-plan.md, 3-tasks.md. Report what was restored and what was lost.

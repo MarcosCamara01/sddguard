@@ -4,6 +4,6 @@ description: Stop and report when a task is blocked by ambiguity or impossibilit
 
 Execute the /impl-gap command defined in .sdd/workflow.md.
 
-The spec name is whatever you typed after the command (e.g. `/impl-gap auth-refresh`).
+Usage: `/impl-gap <feature>`.
 
-STOP execution. Append a GAP entry to specs/<spec>/impl-gaps.md with current task, problem, impact, proposed resolution, and action required. Wait for human direction. If the gap requires changing the spec, escalate to /spec-amend.
+STOP execution. Create specs/<feature>/impl-gaps.md from the template if missing, then append a GAP entry with current task, problem, impact, proposed resolution, action required, and resolution placeholder. Wait for human direction. If the gap requires changing the spec, escalate to /spec-amend.
