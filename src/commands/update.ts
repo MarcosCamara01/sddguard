@@ -18,14 +18,26 @@ const codexSkills = COMMAND_NAMES.map(name => ({
   dest: `.agents/skills/${name}/SKILL.md`,
 }));
 
+const geminiCommands = COMMAND_NAMES.map(name => ({
+  src: `gemini-commands/${name}.toml`,
+  dest: `.gemini/commands/${name}.toml`,
+}));
+
+const windsurfWorkflows = COMMAND_NAMES.map(name => ({
+  src: `windsurf-workflows/${name}.md`,
+  dest: `.windsurf/workflows/${name}.md`,
+}));
+
 const WORKFLOW_FILES: Array<{ src: string; dest: string }> = [
   { src: 'workflow.md', dest: '.sdd/workflow.md' },
   ...claudeCommands,
   { src: 'cursor-rules/sddx-workflow.mdc', dest: '.cursor/rules/sddx-workflow.mdc' },
   { src: 'windsurf-rules/sddx-workflow.md', dest: '.windsurf/rules/sddx-workflow.md' },
+  ...windsurfWorkflows,
   ...copilotPrompts,
   { src: 'copilot-instructions.md', dest: '.github/copilot-instructions.md' },
   ...codexSkills,
+  ...geminiCommands,
   { src: 'zed-rules/sddx-workflow.md', dest: '.rules' },
 ];
 

@@ -1,0 +1,7 @@
+---
+description: Detect file-level conflicts between active specs — detection only
+---
+
+Execute the /spec-conflicts command defined in .sdd/workflow.md.
+
+Cross-reference "Components Affected" across all active specs. Report each file touched by two or more specs, naming the specs and suggesting sequencing. Do not modify any spec.

@@ -44,6 +44,16 @@ const copilotPromptFiles = COMMAND_NAMES.map(name => ({
   dest: `.github/prompts/${name}.prompt.md`,
 }));
 
+const geminiCommandFiles = COMMAND_NAMES.map(name => ({
+  src: `gemini-commands/${name}.toml`,
+  dest: `.gemini/commands/${name}.toml`,
+}));
+
+const windsurfWorkflowFiles = COMMAND_NAMES.map(name => ({
+  src: `windsurf-workflows/${name}.md`,
+  dest: `.windsurf/workflows/${name}.md`,
+}));
+
 const codexSkillDirs = COMMAND_NAMES.map(name => `.agents/skills/${name}`);
 const codexSkillFiles = COMMAND_NAMES.map(name => ({
   src: `codex-skills/${name}/SKILL.md`,
@@ -65,9 +75,10 @@ const PROVIDERS: Record<ProviderId, Provider> = {
   },
   windsurf: {
     name: 'Windsurf',
-    dirs: ['.windsurf/rules'],
+    dirs: ['.windsurf/rules', '.windsurf/workflows'],
     files: [
       { src: 'windsurf-rules/sddx-workflow.md', dest: '.windsurf/rules/sddx-workflow.md' },
+      ...windsurfWorkflowFiles,
     ],
   },
   copilot: {
@@ -88,9 +99,10 @@ const PROVIDERS: Record<ProviderId, Provider> = {
   },
   gemini: {
     name: 'Gemini CLI',
-    dirs: [],
+    dirs: ['.gemini/commands'],
     files: [
       { src: 'gemini.md', dest: 'GEMINI.md' },
+      ...geminiCommandFiles,
     ],
   },
   zed: {
@@ -312,7 +324,7 @@ export async function initCommand(options: InitOptions): Promise<void> {
     }
   }
 
-  const commandProviders: ProviderId[] = ['claude-code', 'copilot', 'codex'];
+  const commandProviders: ProviderId[] = ['claude-code', 'copilot', 'codex', 'gemini', 'windsurf'];
   const withCommands = selectedProviders.filter(id => commandProviders.includes(id));
   const rulesOnly = selectedProviders.filter(id => !commandProviders.includes(id));
 

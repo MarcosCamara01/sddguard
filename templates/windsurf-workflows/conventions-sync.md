@@ -1,0 +1,7 @@
+---
+description: Refresh .sdd/conventions.md from current project state — preserves manual sections
+---
+
+Execute the /conventions-sync command defined in .sdd/workflow.md.
+
+Scan packages, structure, lint/format configs, ORM/router. Preserve sections marked `<!-- manual -->` verbatim; regenerate auto-sections. Present diff and STOP for approval before writing.
