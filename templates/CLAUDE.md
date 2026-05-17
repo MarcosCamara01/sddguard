@@ -2,10 +2,9 @@
 
 This project uses the SDD Protocol. Read these files before starting any task:
 
-1. **[.sdd/workflow.md](.sdd/workflow.md)** — commands, ceremony levels, permissions, stop points, anti-patterns
+1. **[.sdd/workflow.md](.sdd/workflow.md)** — commands, permissions, stop points, anti-patterns
 2. **[.sdd/project-overview.md](.sdd/project-overview.md)** — what this app is, its non-goals, domains, and definition of done
 3. **[.sdd/conventions.md](.sdd/conventions.md)** — project-specific conventions and patterns
-4. **[.sdd/config.json](.sdd/config.json)** — ceremony level
 
 ## Quick Reference
 
@@ -50,7 +49,7 @@ This project uses the SDD Protocol. Read these files before starting any task:
 | Fix a confirmed bug | `/bugfix` → `/finish` |
 | Restructure without behavior change | `/refactor` → `/finish` |
 
-Standard feature flow: `/spec-new` → `/spec-clarify` (Enterprise only) → `/spec-plan` → `/spec-tasks` → `/verify` → `/review` → `/finish`.
+Standard workflow: `/spec-new` → `/spec-clarify` → `/spec-plan` → `/spec-tasks` → `/verify` → `/review` → `/finish`.
 
 ## Per-Phase Permissions
 
@@ -86,7 +85,7 @@ What context to load before running each command. Skip the rest — context budg
 
 See `.sdd/workflow.md` §Anti-Patterns for the full list. The three most critical:
 
-1. **Edit approved spec files silently.** Use `/spec-amend` (Team/Enterprise) or explicit user approval (Solo).
+1. **Edit approved spec files silently.** Use `/spec-amend` or explicit user approval.
 2. **Improvise when the spec is ambiguous.** Use `/impl-gap` and stop.
 3. **Skip `/verify` before `/finish`.** Mechanical checks exist to catch real problems.
 

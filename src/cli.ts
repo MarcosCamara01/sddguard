@@ -3,7 +3,6 @@ import { initCommand } from './commands/init';
 import { addCommand } from './commands/add';
 import { updateCommand } from './commands/update';
 import { statusCommand } from './commands/status';
-import { setCeremonyCommand } from './commands/set-ceremony';
 import { createRequire } from 'module';
 
 const pkg = createRequire(__filename)('../package.json') as { version: string };
@@ -30,18 +29,12 @@ program
 
 program
   .command('update')
-  .description('Update protocol files to the latest version (leaves your config files untouched)')
+  .description('Update protocol files to the latest version')
   .action(updateCommand);
 
 program
   .command('status')
   .description('Show bootstrap status and open specs progress')
   .action(statusCommand);
-
-program
-  .command('set-ceremony [level]')
-  .description('Change the ceremony level for this project (solo | team | enterprise)')
-  .addHelpText('after', '\nExamples:\n  $ sddx-workflow set-ceremony team\n  $ sddx-workflow set-ceremony enterprise\n  $ sddx-workflow set-ceremony  # interactive prompt')
-  .action(setCeremonyCommand);
 
 program.parseAsync();

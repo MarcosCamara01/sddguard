@@ -51,7 +51,7 @@ export function updateCommand(): void {
 
   console.log('');
   console.log('  SDD Workflow — updating workflow files');
-  console.log('  (project-overview.md, conventions.md, CLAUDE.md, config.json, and domains are yours — untouched)');
+  console.log('  (project-overview.md, conventions.md, CLAUDE.md, and domains are yours — untouched)');
   console.log('  (only files that already exist are updated — run `init --force` to add new commands)');
   console.log('');
 

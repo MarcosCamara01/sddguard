@@ -2,10 +2,9 @@
 
 This project uses the SDD Protocol. Before starting any task, read:
 
-1. `.sdd/workflow.md` — commands, ceremony levels, permissions, stop points, anti-patterns
+1. `.sdd/workflow.md` — commands, permissions, stop points, anti-patterns
 2. `.sdd/project-overview.md` — what this app is, its non-goals, and domains
 3. `.sdd/conventions.md` — project-specific conventions and patterns
-4. `.sdd/config.json` — ceremony level
 
 ## Available commands
 
@@ -51,7 +50,7 @@ Use these slash commands in Copilot Chat (type `/` to see them):
 | `/bugfix` | Reproduce → diagnose → fix → validate |
 | `/refactor` | Restructure without behavior change |
 
-Standard feature flow: `/spec-new` → `/spec-clarify` (Enterprise) → `/spec-plan` → `/spec-tasks` → `/verify` → `/review` → `/finish`.
+Standard workflow: `/spec-new` → `/spec-clarify` → `/spec-plan` → `/spec-tasks` → `/verify` → `/review` → `/finish`.
 
 ## Execution principles
 

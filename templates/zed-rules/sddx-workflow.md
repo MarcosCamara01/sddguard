@@ -1,9 +1,8 @@
 This project uses the SDD Protocol. Before starting any task, read:
 
-1. `.sdd/workflow.md` — all commands, ceremony levels, permissions, stop points, anti-patterns
+1. `.sdd/workflow.md` — all commands, permissions, stop points, anti-patterns
 2. `.sdd/project-overview.md` — what this app is, its non-goals, and domains
 3. `.sdd/conventions.md` — project-specific conventions and patterns
-4. `.sdd/config.json` — ceremony level
 
 ## Workflows
 
@@ -48,5 +47,5 @@ This project uses the SDD Protocol. Before starting any task, read:
 | `refactor` | Restructure without behavior change |
 
 Invoke by name (e.g., "run bootstrap", "start spec-new for auth-refresh").
-Standard feature flow: `spec-new` → `spec-clarify` (Enterprise) → `spec-plan` → `spec-tasks` → `verify` → `review` → `finish`.
+Standard workflow: `spec-new` → `spec-clarify` → `spec-plan` → `spec-tasks` → `verify` → `review` → `finish`.
 Full definitions are in `.sdd/workflow.md`.

@@ -1,6 +1,6 @@
 import path from 'path';
 import fs from 'fs';
-import { checkbox, select } from '@inquirer/prompts';
+import { checkbox } from '@inquirer/prompts';
 import { ensureDir, copyTemplate } from '../utils';
 import { COMMAND_NAMES } from './command-names';
 
@@ -116,42 +116,6 @@ const PROVIDERS: Record<ProviderId, Provider> = {
 
 const ALL_PROVIDER_IDS = Object.keys(PROVIDERS) as ProviderId[];
 
-type Ceremony = 'solo' | 'team' | 'enterprise';
-
-interface CeremonyConfig {
-  ceremony: Ceremony;
-}
-
-async function selectCeremony(): Promise<Ceremony> {
-  if (!process.stdout.isTTY) {
-    return 'team';
-  }
-
-  const choice = await select<Ceremony>({
-    message: 'Ceremony level:',
-    default: 'team',
-    choices: [
-      {
-        name: 'Solo / MVP   — minimal: /spec-plan, /spec-tasks, /finish',
-        value: 'solo',
-        description: 'Single developer, prototypes, exploratory work',
-      },
-      {
-        name: 'Team / Product   — standard: full feature flow + /verify + /review',
-        value: 'team',
-        description: 'Cross-functional team, real product, normal cadence',
-      },
-      {
-        name: 'Enterprise   — full: + mandatory /spec-clarify + mandatory /spec-amend on changes',
-        value: 'enterprise',
-        description: 'Compliance, audit trails, multi-team',
-      },
-    ],
-  });
-
-  return choice;
-}
-
 async function selectProviders(): Promise<ProviderId[]> {
   if (!process.stdout.isTTY) {
     return ALL_PROVIDER_IDS;
@@ -170,53 +134,6 @@ async function selectProviders(): Promise<ProviderId[]> {
   return selected as ProviderId[];
 }
 
-const CEREMONY_HEADERS: Record<Ceremony, string> = {
-  solo: `> **Active ceremony level: Solo / MVP.**
-> Required flow: \`/spec-plan\` → \`/spec-tasks\` → \`/finish\`
-> The rest of this file documents the full protocol. The sections relevant to your level are: Execution Principles, /spec-plan, /spec-tasks, /finish, Stop Points. Other commands are available opt-in.
-`,
-  team: `> **Active ceremony level: Team / Product.**
-> Required flow: \`/spec-new\` → \`/spec-plan\` → \`/spec-tasks\` → \`/verify\` → \`/review\` → \`/finish\`
-> Use \`/spec-amend\` for any post-approval change and \`/impl-gap\` whenever a task is blocked.
-`,
-  enterprise: `> **Active ceremony level: Enterprise.**
-> Required flow: \`/spec-new\` → \`/spec-clarify\` → \`/spec-plan\` → \`/spec-tasks\` → \`/verify\` → \`/review\` → \`/finish\`
-> Mandatory: \`/spec-clarify\` before \`/spec-plan\` and \`/spec-amend\` for every post-approval change.
-`,
-};
-
-function injectCeremonyHeader(cwd: string, ceremony: Ceremony): void {
-  const target = path.join(cwd, '.sdd/workflow.md');
-  if (!fs.existsSync(target)) return;
-  const content = fs.readFileSync(target, 'utf8');
-  if (content.includes('> **Active ceremony level:')) return;
-
-  const header = CEREMONY_HEADERS[ceremony];
-  const lines = content.split('\n');
-  const firstHeading = lines.findIndex(line => line.startsWith('# '));
-  if (firstHeading < 0) return;
-
-  const before = lines.slice(0, firstHeading + 1);
-  const after = lines.slice(firstHeading + 1);
-  const merged = [...before, '', header.trimEnd(), ...after].join('\n');
-  fs.writeFileSync(target, merged, 'utf8');
-  console.log(`  patch     .sdd/workflow.md (ceremony: ${ceremony})`);
-}
-
-function writeConfig(cwd: string, ceremony: Ceremony, force?: boolean): void {
-  const dest = path.join(cwd, '.sdd/config.json');
-  const existed = fs.existsSync(dest);
-  if (existed && !force) {
-    console.log(`  skip     ${dest}`);
-    return;
-  }
-  const config: CeremonyConfig = {
-    ceremony,
-  };
-  fs.writeFileSync(dest, JSON.stringify(config, null, 2) + '\n', 'utf8');
-  console.log(`  ${existed ? 'overwrite' : 'create  '}  ${dest}`);
-}
-
 export async function initCommand(options: InitOptions): Promise<void> {
   const cwd = process.cwd();
   const { force, existing } = options;
@@ -225,7 +142,6 @@ export async function initCommand(options: InitOptions): Promise<void> {
   console.log(`  SDD Workflow — initializing${existing ? ' (existing project mode)' : ''}`);
   console.log('');
 
-  const ceremony = await selectCeremony();
   const selectedProviders = await selectProviders();
 
   console.log('');
@@ -247,9 +163,6 @@ export async function initCommand(options: InitOptions): Promise<void> {
     copyTemplate(file.src, path.join(cwd, file.dest), force);
   }
 
-  injectCeremonyHeader(cwd, ceremony);
-  writeConfig(cwd, ceremony, force);
-
   for (const id of selectedProviders) {
     for (const file of PROVIDERS[id].files) {
       copyTemplate(file.src, path.join(cwd, file.dest), force);
@@ -257,7 +170,7 @@ export async function initCommand(options: InitOptions): Promise<void> {
   }
 
   console.log('');
-  console.log(`  Done. Ceremony: ${ceremony}. Next steps:`);
+  console.log('  Done. Next steps:');
   console.log('');
   if (existing) {
     console.log('  1. Run /scan to discover the codebase (no .sdd/ writes — produces scan-report.md)');

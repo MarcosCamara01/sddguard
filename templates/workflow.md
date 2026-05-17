@@ -300,7 +300,6 @@ Rules:
 - Never record implementation gaps inside `2-plan.md`; `impl-gaps.md` is the only gap log
 - The agent's proposed resolution is always non-binding — only the human decides
 - Multiple gaps per feature are normal; keep numbering monotonic
-- **Solo mode exception:** If `.sdd/config.json` sets `"ceremony": "solo"`, and the gap requires a spec change, skip the formal CR process. Instead, present the proposed change directly to the user, wait for explicit approval, then apply it and document the decision in the gap entry under a **Resolution** field. The change must still be user-approved — "no formal CR" does not mean "decide silently".
 
 ---
 
@@ -500,26 +499,14 @@ Rules for the message:
 
 ---
 
-## Ceremony Levels
-
-The `npx sddx-workflow init` prompt asks for a ceremony level. The choice lives in `.sdd/config.json` and sets the recommended flow.
-
-To change the ceremony level after initialization: `sddx-workflow set-ceremony <solo|team|enterprise>` — updates `config.json` and patches the header in this file.
-
-| Edition | Use when | Required flow | Optional commands |
-|---|---|---|---|
-| **Solo / MVP** | Single developer, prototyping, exploratory work | `/spec-plan` → `/spec-tasks` → `/finish` | `/spec-status`, `/research` |
-| **Team / Product** *(default)* | Cross-functional team, real product, normal cadence | `/spec-new` → `/spec-plan` → `/spec-tasks` → `/verify` → `/review` → `/finish` | All commands; amendments encouraged on scope changes |
-| **Enterprise** | Compliance, audit trails, multi-team | All Team flow + mandatory `/spec-clarify` before `/spec-plan` + mandatory `/spec-amend` for any post-approval change |
+## Default Flow
 
 | Change size | Required flow |
 |---|---|
-| Typo / comment | Direct — no ceremony |
+| Typo / comment | Direct change |
 | Bug (< ~50 lines, 1 file) | /bugfix → /finish |
 | Refactor (no behavior change) | /refactor → /finish |
-| Feature (Solo) | /spec-plan → /spec-tasks → /finish |
-| Feature (Team) | /spec-new → /spec-plan → /spec-tasks → /verify → /review → /finish |
-| Feature (Enterprise) | /spec-new → /spec-clarify → /spec-plan → /spec-tasks → /verify → /review → /finish |
+| Feature | /spec-new → /spec-clarify → /spec-plan → /spec-tasks → /verify → /review → /finish |
 | Architecture change | /spec-new → /spec-clarify → /spec-plan (mandatory human review) → /spec-tasks → /verify → /review → /finish |
 | Post-approval change | /spec-amend → (resume with current phase) |
 

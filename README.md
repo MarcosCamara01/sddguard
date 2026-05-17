@@ -39,13 +39,13 @@ There is no daemon, server, database, or task runner. `sddx-workflow` is an
 
 Two command surfaces:
 
-- **CLI commands** run in your terminal — install, status, config:
-  `npx sddx-workflow init`, `sddx-workflow status`, `sddx-workflow set-ceremony team`.
+- **CLI commands** run in your terminal — install, status, updates:
+  `npx sddx-workflow init`, `sddx-workflow status`, `sddx-workflow update`.
 - **Agent commands** run inside your AI tool — the actual workflow:
   `/spec-plan`, `/spec-tasks`, `/verify`, `/finish`.
 
 The agent reads `.sdd/workflow.md` before every task. That file defines the commands,
-ceremony levels, per-phase permissions, and **non-negotiable stop points**. The agent
+per-phase permissions, and **non-negotiable stop points**. The agent
 drafts plans and reports; the human approves structural decisions. Each feature lives
 in `specs/<feature>/` as Markdown you can read and diff.
 
@@ -67,7 +67,7 @@ Request instead of editing them silently.
 New project:
 
 ```bash
-# 1. Install the protocol (prompts for ceremony level + which agents to set up)
+# 1. Install the protocol (prompts for which agents to set up)
 npx sddx-workflow init
 
 # 2. Populate project context — run inside your AI agent
@@ -100,37 +100,13 @@ npx sddx-workflow init --existing
 |---|---|
 | Small confirmed bug (≤ ~50 lines, 1 file) | `/bugfix` → `/finish` |
 | Behavior-preserving cleanup | `/refactor` → `/finish` |
-| New feature | `/spec-new <name>` → `/spec-plan <name>` → `/spec-tasks <name>` → `/verify` → `/review` → `/finish` |
+| New feature | `/spec-new <name>` → `/spec-clarify <name>` → `/spec-plan <name>` → `/spec-tasks <name>` → `/verify` → `/review` → `/finish` |
 | Unsure how the code works | `/ask` |
 | Comparing libraries or approaches | `/research <feature> <topic>` |
 | Requirements ambiguous before planning | `/spec-clarify <feature>` |
 | Implementation blocked mid-task | `/impl-gap <feature>` |
 | Approved requirements or plan must change | `/spec-amend <feature> <change-summary>` |
 | Work done, needs audit | `/verify <feature>` → `/review <feature>` |
-
----
-
-## Ceremony levels
-
-`init` asks for a ceremony level (defaults to `team` in non-interactive installs).
-It's stored in `.sdd/config.json` and changeable any time with
-`sddx-workflow set-ceremony`. The level sets the **recommended flow** and the active
-header in `.sdd/workflow.md` — it does not remove commands or enforce runtime
-permissions. The full protocol stays readable for everyone.
-
-| Level | Use when | Feature flow |
-|---|---|---|
-| **Solo / MVP** | Single dev, prototypes, exploratory work | `/spec-plan` → `/spec-tasks` → `/finish` |
-| **Team / Product** *(default)* | Real product, normal cadence | `/spec-new` → `/spec-plan` → `/spec-tasks` → `/verify` → `/review` → `/finish` |
-| **Enterprise** | Compliance, audit trails, multi-team | `/spec-new` → `/spec-clarify` → `/spec-plan` → `/spec-tasks` → `/verify` → `/review` → `/finish` |
-
-```bash
-npx sddx-workflow set-ceremony enterprise   # change level later
-npx sddx-workflow set-ceremony              # interactive picker
-```
-
-Post-approval spec changes go through `/spec-amend`; implementation-time ambiguity
-goes through `/impl-gap`.
 
 ---
 
@@ -188,7 +164,7 @@ qualitative human-touch pass. Both are read-only — neither edits code or specs
 ## CLI reference
 
 ```bash
-npx sddx-workflow init                  # install protocol (prompts ceremony + agents)
+npx sddx-workflow init                  # install protocol (prompts for agents)
 npx sddx-workflow init --existing       # brownfield: next steps start with /scan
 npx sddx-workflow init --force          # overwrite existing protocol files
 
@@ -196,10 +172,7 @@ npx sddx-workflow add domain auth       # add a domain context file (.sdd/domain
                                         # also: payments, storage, email
 
 npx sddx-workflow status                # bootstrap state + open specs progress
-npx sddx-workflow update                # refresh protocol files (your config untouched)
-
-npx sddx-workflow set-ceremony <solo|team|enterprise>   # change ceremony level
-npx sddx-workflow set-ceremony                          # interactive picker
+npx sddx-workflow update                # refresh protocol files
 ```
 
 Everything is **copied locally** — your repo owns the files, no runtime dependency,
@@ -218,8 +191,8 @@ installs, because that could surprise teams that customized their local workflow
 | Add a domain file | `sddx-workflow add domain auth` |
 
 `update` and `init --force` never touch `project-overview.md`, `conventions.md`,
-`config.json`, or `domains/`. Before `init --force`, review local changes to provider
-command files, `CLAUDE.md`, and `AGENTS.md`.
+or `domains/`. Before `init --force`, review local changes to provider command files,
+`CLAUDE.md`, and `AGENTS.md`.
 
 ---
 
@@ -227,10 +200,9 @@ command files, `CLAUDE.md`, and `AGENTS.md`.
 
 ```
 .sdd/
-  workflow.md            # commands, ceremony levels, permissions, stop points
+  workflow.md            # commands, permissions, stop points
   project-overview.md    # what this app is — populated by /bootstrap
   conventions.md         # stack & patterns — populated by /bootstrap
-  config.json            # ceremony level
   domains/               # optional domain rules (auth, payments, …)
 specs/
   _template/             # source templates copied by /spec-new
@@ -324,7 +296,6 @@ Enforced by every command:
 - **Zero runtime dependency** — files copied locally, no server, daemon, or watcher.
 - **npx-first** — one command, no Python/uv/pipx.
 - **The human decides, the agent executes** — no automated structural decisions.
-- **Minimum ceremony by default** — advanced flow is opt-in per ceremony level.
 - **Files you can read** — pure Markdown, no databases, no binary formats.
 
 ---

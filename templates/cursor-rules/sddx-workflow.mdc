@@ -5,10 +5,9 @@ alwaysApply: true
 
 This project uses the SDD Protocol. Before starting any task, read:
 
-1. `.sdd/workflow.md` — all commands, ceremony levels, permissions, stop points, anti-patterns
+1. `.sdd/workflow.md` — all commands, permissions, stop points, anti-patterns
 2. `.sdd/project-overview.md` — what this app is, its non-goals, and domains
 3. `.sdd/conventions.md` — project-specific conventions and patterns
-4. `.sdd/config.json` — ceremony level
 
 ## Available commands
 
@@ -52,6 +51,6 @@ This project uses the SDD Protocol. Before starting any task, read:
 | `/bugfix` | Reproduce → diagnose → fix → validate |
 | `/refactor` | Restructure without behavior change |
 
-Standard feature flow: `/spec-new` → `/spec-clarify` (Enterprise) → `/spec-plan` → `/spec-tasks` → `/verify` → `/review` → `/finish`.
+Standard workflow: `/spec-new` → `/spec-clarify` → `/spec-plan` → `/spec-tasks` → `/verify` → `/review` → `/finish`.
 
 Full definitions for each command are in `.sdd/workflow.md`.
