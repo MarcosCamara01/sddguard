@@ -119,7 +119,8 @@ export function statusCommand(): void {
   const cwd = process.cwd();
 
   if (!fs.existsSync(path.join(cwd, '.sdd'))) {
-    console.error('\n  error    .sdd/ not found. Run `npx sddx-workflow init` first.\n');
+    console.error('\n  error    No SDD installation found in this directory.');
+    console.error('  next     Run `npx sddx-workflow init` or cd into a project that already has .sdd/.\n');
     process.exit(1);
   }
 

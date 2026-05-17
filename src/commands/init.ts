@@ -2,121 +2,35 @@ import path from 'path';
 import fs from 'fs';
 import { checkbox } from '@inquirer/prompts';
 import { ensureDir, copyTemplate } from '../utils';
-import { COMMAND_NAMES } from './command-names';
+import { ALL_PROVIDER_IDS, COMMAND_PROVIDER_IDS, CORE_FILES, PROVIDERS, ProviderId, parseProviderList } from '../providers';
 
 interface InitOptions {
   force?: boolean;
   existing?: boolean;
+  provider?: string;
+  all?: boolean;
 }
 
-const CORE_FILES: Array<{ src: string; dest: string }> = [
-  { src: 'workflow.md', dest: '.sdd/workflow.md' },
-  { src: 'project-overview.md', dest: '.sdd/project-overview.md' },
-  { src: 'conventions/base.md', dest: '.sdd/conventions.md' },
-  { src: 'CLAUDE.md', dest: 'CLAUDE.md' },
-  { src: 'specs/_template/1-requirements.md', dest: 'specs/_template/1-requirements.md' },
-  { src: 'specs/_template/2-plan.md', dest: 'specs/_template/2-plan.md' },
-  { src: 'specs/_template/3-tasks.md', dest: 'specs/_template/3-tasks.md' },
-  { src: 'specs/_template/amendments.md', dest: 'specs/_template/amendments.md' },
-  { src: 'specs/_template/impl-gaps.md', dest: 'specs/_template/impl-gaps.md' },
-  { src: 'specs/_template/verify-report.md', dest: 'specs/_template/verify-report.md' },
-  { src: 'specs/_template/analysis.md', dest: 'specs/_template/analysis.md' },
-  { src: 'specs/_template/2a-data-model.md', dest: 'specs/_template/2a-data-model.md' },
-  { src: 'specs/_template/2b-api-contracts.md', dest: 'specs/_template/2b-api-contracts.md' },
-  { src: 'specs/_template/2c-research.md', dest: 'specs/_template/2c-research.md' },
-];
+async function selectProviders(options: InitOptions): Promise<ProviderId[]> {
+  if (options.provider && options.all) {
+    console.error('\n  error    Use either --provider or --all, not both.\n');
+    process.exit(1);
+  }
 
-type ProviderId = 'claude-code' | 'cursor' | 'windsurf' | 'copilot' | 'codex' | 'gemini' | 'zed';
+  if (options.provider) {
+    try {
+      return parseProviderList(options.provider);
+    } catch (error) {
+      console.error(`\n  error    ${(error as Error).message}`);
+      console.error(`  valid    ${ALL_PROVIDER_IDS.join(', ')}\n`);
+      process.exit(1);
+    }
+  }
 
-interface Provider {
-  name: string;
-  dirs: string[];
-  files: Array<{ src: string; dest: string }>;
-}
+  if (options.all) {
+    return ALL_PROVIDER_IDS;
+  }
 
-const claudeCommandFiles = COMMAND_NAMES.map(name => ({
-  src: `claude-commands/${name}.md`,
-  dest: `.claude/commands/${name}.md`,
-}));
-
-const copilotPromptFiles = COMMAND_NAMES.map(name => ({
-  src: `copilot-prompts/${name}.prompt.md`,
-  dest: `.github/prompts/${name}.prompt.md`,
-}));
-
-const geminiCommandFiles = COMMAND_NAMES.map(name => ({
-  src: `gemini-commands/${name}.toml`,
-  dest: `.gemini/commands/${name}.toml`,
-}));
-
-const windsurfWorkflowFiles = COMMAND_NAMES.map(name => ({
-  src: `windsurf-workflows/${name}.md`,
-  dest: `.windsurf/workflows/${name}.md`,
-}));
-
-const codexSkillDirs = COMMAND_NAMES.map(name => `.agents/skills/${name}`);
-const codexSkillFiles = COMMAND_NAMES.map(name => ({
-  src: `codex-skills/${name}/SKILL.md`,
-  dest: `.agents/skills/${name}/SKILL.md`,
-}));
-
-const PROVIDERS: Record<ProviderId, Provider> = {
-  'claude-code': {
-    name: 'Claude Code',
-    dirs: ['.claude/commands'],
-    files: claudeCommandFiles,
-  },
-  cursor: {
-    name: 'Cursor',
-    dirs: ['.cursor/rules'],
-    files: [
-      { src: 'cursor-rules/sddx-workflow.mdc', dest: '.cursor/rules/sddx-workflow.mdc' },
-    ],
-  },
-  windsurf: {
-    name: 'Windsurf',
-    dirs: ['.windsurf/rules', '.windsurf/workflows'],
-    files: [
-      { src: 'windsurf-rules/sddx-workflow.md', dest: '.windsurf/rules/sddx-workflow.md' },
-      ...windsurfWorkflowFiles,
-    ],
-  },
-  copilot: {
-    name: 'GitHub Copilot',
-    dirs: ['.github/prompts'],
-    files: [
-      ...copilotPromptFiles,
-      { src: 'copilot-instructions.md', dest: '.github/copilot-instructions.md' },
-    ],
-  },
-  codex: {
-    name: 'OpenAI Codex',
-    dirs: codexSkillDirs,
-    files: [
-      { src: 'AGENTS.md', dest: 'AGENTS.md' },
-      ...codexSkillFiles,
-    ],
-  },
-  gemini: {
-    name: 'Gemini CLI',
-    dirs: ['.gemini/commands'],
-    files: [
-      { src: 'gemini.md', dest: 'GEMINI.md' },
-      ...geminiCommandFiles,
-    ],
-  },
-  zed: {
-    name: 'Zed',
-    dirs: [],
-    files: [
-      { src: 'zed-rules/sddx-workflow.md', dest: '.rules' },
-    ],
-  },
-};
-
-const ALL_PROVIDER_IDS = Object.keys(PROVIDERS) as ProviderId[];
-
-async function selectProviders(): Promise<ProviderId[]> {
   if (!process.stdout.isTTY) {
     return ALL_PROVIDER_IDS;
   }
@@ -134,6 +48,10 @@ async function selectProviders(): Promise<ProviderId[]> {
   return selected as ProviderId[];
 }
 
+function formatList(items: string[]): string {
+  return items.length > 0 ? items.join(', ') : 'none';
+}
+
 export async function initCommand(options: InitOptions): Promise<void> {
   const cwd = process.cwd();
   const { force, existing } = options;
@@ -142,7 +60,7 @@ export async function initCommand(options: InitOptions): Promise<void> {
   console.log(`  SDD Workflow — initializing${existing ? ' (existing project mode)' : ''}`);
   console.log('');
 
-  const selectedProviders = await selectProviders();
+  const selectedProviders = await selectProviders(options);
 
   console.log('');
 
@@ -169,8 +87,25 @@ export async function initCommand(options: InitOptions): Promise<void> {
     }
   }
 
+  const providerNames = selectedProviders.map(id => PROVIDERS[id].name);
+  const commandProviders = selectedProviders.filter(id => COMMAND_PROVIDER_IDS.includes(id));
+  const rulesOnly = selectedProviders.filter(id => !COMMAND_PROVIDER_IDS.includes(id));
+
   console.log('');
-  console.log('  Done. Next steps:');
+  console.log('  SDD Workflow initialized');
+  console.log('');
+  console.log(`  Providers: ${formatList(providerNames)}`);
+  console.log(`  Core:      .sdd/workflow.md, .sdd/project-overview.md, .sdd/conventions.md, specs/_template/`);
+  if (commandProviders.length > 0) {
+    const names = commandProviders.map(id => PROVIDERS[id].name);
+    console.log(`  Commands:  ${formatList(names)}`);
+  }
+  if (rulesOnly.length > 0) {
+    const names = rulesOnly.map(id => PROVIDERS[id].name);
+    console.log(`  Rules:     ${formatList(names)}`);
+  }
+  console.log('');
+  console.log('  Next steps:');
   console.log('');
   if (existing) {
     console.log('  1. Run /scan to discover the codebase (no .sdd/ writes — produces scan-report.md)');
@@ -179,38 +114,42 @@ export async function initCommand(options: InitOptions): Promise<void> {
     console.log('  1. Run /bootstrap to populate project context (new project)');
     console.log('     or /bootstrap --scan to let the agent analyze the codebase (existing project)');
   }
-  if (!claudeExisted) {
-    console.log('  2. CLAUDE.md was created — share it with your AI agent as context');
-  } else {
-    console.log('  2. CLAUDE.md already exists — add a reference to .sdd/ files manually');
+
+  const entryMessages: string[] = [];
+  if (selectedProviders.includes('claude-code')) {
+    entryMessages.push(claudeExisted
+      ? 'CLAUDE.md already exists — add a reference to .sdd/ files manually'
+      : 'CLAUDE.md was created — Claude Code will read it automatically');
   }
   if (selectedProviders.includes('gemini')) {
-    if (!geminiExisted) {
-      console.log('     GEMINI.md was created — Gemini CLI will read it automatically');
-    } else {
-      console.log('     GEMINI.md already exists — add a reference to .sdd/ files manually');
-    }
+    entryMessages.push(geminiExisted
+      ? 'GEMINI.md already exists — add a reference to .sdd/ files manually'
+      : 'GEMINI.md was created — Gemini CLI will read it automatically');
   }
   if (selectedProviders.includes('codex')) {
-    if (!agentsExisted) {
-      console.log('     AGENTS.md was created — Codex will read it automatically');
-    } else {
-      console.log('     AGENTS.md already exists — add a reference to .sdd/ files manually');
-    }
+    entryMessages.push(agentsExisted
+      ? 'AGENTS.md already exists — add a reference to .sdd/ files manually'
+      : 'AGENTS.md was created — Codex will read it automatically');
   }
 
-  const commandProviders: ProviderId[] = ['claude-code', 'copilot', 'codex', 'gemini', 'windsurf'];
-  const withCommands = selectedProviders.filter(id => commandProviders.includes(id));
-  const rulesOnly = selectedProviders.filter(id => !commandProviders.includes(id));
+  let nextStep = 2;
 
-  if (withCommands.length > 0) {
-    const names = withCommands.map(id => PROVIDERS[id].name).join(', ');
-    console.log(`  3. Slash commands ready in: ${names}. Type / to see them.`);
+  if (entryMessages.length > 0) {
+    console.log(`  ${nextStep}. ${entryMessages[0]}`);
+    for (const message of entryMessages.slice(1)) {
+      console.log(`     ${message}`);
+    }
+    nextStep++;
+  }
+
+  if (commandProviders.length > 0) {
+    const names = commandProviders.map(id => PROVIDERS[id].name).join(', ');
+    console.log(`  ${nextStep}. Slash commands ready in: ${names}. Type / to see them.`);
+    nextStep++;
   }
   if (rulesOnly.length > 0) {
     const names = rulesOnly.map(id => PROVIDERS[id].name).join(', ');
-    const step = withCommands.length === 0 ? '3.' : '   ';
-    console.log(`  ${step} Context rules installed for: ${names}. The agent reads workflow.md on every task.`);
+    console.log(`  ${nextStep}. Context rules installed for: ${names}. The agent reads workflow.md on every task.`);
   }
   console.log('');
 }

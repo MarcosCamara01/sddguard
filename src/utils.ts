@@ -9,6 +9,11 @@ export function ensureDir(dir: string): void {
   }
 }
 
+export function displayPath(filePath: string): string {
+  const relative = path.relative(process.cwd(), filePath);
+  return relative && !relative.startsWith('..') ? relative : filePath;
+}
+
 export function copyTemplate(
   src: string,
   dest: string,
@@ -16,9 +21,9 @@ export function copyTemplate(
 ): void {
   const exists = fs.existsSync(dest);
   if (exists && !force) {
-    console.log(`  skip     ${dest}`);
+    console.log(`  skip     ${displayPath(dest)}`);
     return;
   }
   fs.copyFileSync(path.join(TEMPLATES_DIR, src), dest);
-  console.log(`  ${exists ? 'overwrite' : 'create  '}  ${dest}`);
+  console.log(`  ${exists ? 'overwrite' : 'create  '}  ${displayPath(dest)}`);
 }

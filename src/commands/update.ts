@@ -1,72 +1,75 @@
 import fs from 'fs';
 import path from 'path';
-import { copyTemplate } from '../utils';
-import { COMMAND_NAMES } from './command-names';
+import { copyTemplate, displayPath, TEMPLATES_DIR } from '../utils';
+import { WORKFLOW_FILES } from '../providers';
 
-const claudeCommands = COMMAND_NAMES.map(name => ({
-  src: `claude-commands/${name}.md`,
-  dest: `.claude/commands/${name}.md`,
-}));
+interface UpdateOptions {
+  dryRun?: boolean;
+  check?: boolean;
+}
 
-const copilotPrompts = COMMAND_NAMES.map(name => ({
-  src: `copilot-prompts/${name}.prompt.md`,
-  dest: `.github/prompts/${name}.prompt.md`,
-}));
+function fileChanged(src: string, dest: string): boolean {
+  const template = fs.readFileSync(path.join(TEMPLATES_DIR, src), 'utf8');
+  const current = fs.readFileSync(dest, 'utf8');
+  return template !== current;
+}
 
-const codexSkills = COMMAND_NAMES.map(name => ({
-  src: `codex-skills/${name}/SKILL.md`,
-  dest: `.agents/skills/${name}/SKILL.md`,
-}));
-
-const geminiCommands = COMMAND_NAMES.map(name => ({
-  src: `gemini-commands/${name}.toml`,
-  dest: `.gemini/commands/${name}.toml`,
-}));
-
-const windsurfWorkflows = COMMAND_NAMES.map(name => ({
-  src: `windsurf-workflows/${name}.md`,
-  dest: `.windsurf/workflows/${name}.md`,
-}));
-
-const WORKFLOW_FILES: Array<{ src: string; dest: string }> = [
-  { src: 'workflow.md', dest: '.sdd/workflow.md' },
-  ...claudeCommands,
-  { src: 'cursor-rules/sddx-workflow.mdc', dest: '.cursor/rules/sddx-workflow.mdc' },
-  { src: 'windsurf-rules/sddx-workflow.md', dest: '.windsurf/rules/sddx-workflow.md' },
-  ...windsurfWorkflows,
-  ...copilotPrompts,
-  { src: 'copilot-instructions.md', dest: '.github/copilot-instructions.md' },
-  ...codexSkills,
-  ...geminiCommands,
-  { src: 'zed-rules/sddx-workflow.md', dest: '.rules' },
-];
-
-export function updateCommand(): void {
+export function updateCommand(options: UpdateOptions = {}): void {
   const cwd = process.cwd();
 
   if (!fs.existsSync(path.join(cwd, '.sdd'))) {
-    console.error('\n  error    .sdd/ not found. Run `npx sddx-workflow init` first.\n');
+    console.error('\n  error    No SDD installation found in this directory.');
+    console.error('  next     Run `npx sddx-workflow init` or cd into a project that already has .sdd/.\n');
     process.exit(1);
   }
 
   console.log('');
-  console.log('  SDD Workflow — updating workflow files');
-  console.log('  (project-overview.md, conventions.md, CLAUDE.md, and domains are yours — untouched)');
+  console.log(`  SDD Workflow — ${options.check ? 'checking' : options.dryRun ? 'previewing' : 'updating'} workflow files`);
+  console.log('  (project-overview.md, conventions.md, and domains are yours — untouched)');
   console.log('  (only files that already exist are updated — run `init --force` to add new commands)');
   console.log('');
 
   let updated = 0;
+  let unchanged = 0;
+  let missing = 0;
+
   for (const file of WORKFLOW_FILES) {
     const dest = path.join(cwd, file.dest);
 
     // Only update files that already exist — never silently create new command files
     // on old installs, as users may not have opted into the new commands.
-    if (!fs.existsSync(dest)) continue;
+    if (!fs.existsSync(dest)) {
+      missing++;
+      continue;
+    }
+
+    if (!fileChanged(file.src, dest)) {
+      unchanged++;
+      continue;
+    }
+
+    if (options.check || options.dryRun) {
+      console.log(`  update   ${displayPath(dest)}`);
+      updated++;
+      continue;
+    }
 
     copyTemplate(file.src, dest, true);
     updated++;
   }
 
   console.log('');
-  console.log(`  Done. ${updated} file${updated !== 1 ? 's' : ''} updated.\n`);
+  if (options.check) {
+    console.log(`  ${updated === 0 ? 'ok' : 'outdated'}      ${updated} outdated, ${unchanged} current, ${missing} not installed`);
+    if (updated > 0) process.exit(1);
+    console.log('');
+    return;
+  }
+
+  if (options.dryRun) {
+    console.log(`  Preview. ${updated} file${updated !== 1 ? 's' : ''} would be updated, ${unchanged} current, ${missing} not installed.\n`);
+    return;
+  }
+
+  console.log(`  Done. ${updated} file${updated !== 1 ? 's' : ''} updated, ${unchanged} current, ${missing} not installed.\n`);
 }

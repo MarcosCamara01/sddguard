@@ -165,6 +165,9 @@ qualitative human-touch pass. Both are read-only — neither edits code or specs
 
 ```bash
 npx sddx-workflow init                  # install protocol (prompts for agents)
+npx sddx-workflow init --provider codex # install only one provider integration
+npx sddx-workflow init --provider codex,gemini
+npx sddx-workflow init --all            # install every provider integration
 npx sddx-workflow init --existing       # brownfield: next steps start with /scan
 npx sddx-workflow init --force          # overwrite existing protocol files
 
@@ -172,7 +175,11 @@ npx sddx-workflow add domain auth       # add a domain context file (.sdd/domain
                                         # also: payments, storage, email
 
 npx sddx-workflow status                # bootstrap state + open specs progress
+npx sddx-workflow commands              # list agent commands
 npx sddx-workflow update                # refresh protocol files
+npx sddx-workflow update --dry-run      # preview installed files that would change
+npx sddx-workflow update --check        # CI-friendly outdated check
+npx sddx-workflow doctor                # validate install health + stale files
 ```
 
 Everything is **copied locally** — your repo owns the files, no runtime dependency,
@@ -187,8 +194,12 @@ installs, because that could surprise teams that customized their local workflow
 | Need | Command |
 |---|---|
 | Refresh files you already have | `sddx-workflow update` |
+| List agent commands | `sddx-workflow commands` |
+| Preview template updates | `sddx-workflow update --dry-run` |
+| Fail CI when templates are outdated | `sddx-workflow update --check` |
 | Pull in commands added by a newer version | `sddx-workflow init --force` |
 | Add a domain file | `sddx-workflow add domain auth` |
+| Check installation health | `sddx-workflow doctor` |
 
 `update` and `init --force` never touch `project-overview.md`, `conventions.md`,
 or `domains/`. Before `init --force`, review local changes to provider command files,

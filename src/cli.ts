@@ -3,6 +3,8 @@ import { initCommand } from './commands/init';
 import { addCommand } from './commands/add';
 import { updateCommand } from './commands/update';
 import { statusCommand } from './commands/status';
+import { doctorCommand } from './commands/doctor';
+import { commandsCommand } from './commands/commands';
 import { createRequire } from 'module';
 
 const pkg = createRequire(__filename)('../package.json') as { version: string };
@@ -19,6 +21,8 @@ program
   .description('Initialize SDD protocol in the current project')
   .option('--force', 'Overwrite files that already exist')
   .option('--existing', 'Brownfield mode: prints next-steps that start with /scan and /bootstrap --scan')
+  .option('--provider <ids>', 'Comma-separated providers to install (claude-code,cursor,windsurf,copilot,codex,gemini,zed)')
+  .option('--all', 'Install all provider integrations without prompting')
   .action(initCommand);
 
 program
@@ -30,11 +34,23 @@ program
 program
   .command('update')
   .description('Update protocol files to the latest version')
+  .option('--dry-run', 'Show which installed workflow files would change')
+  .option('--check', 'Exit non-zero when installed workflow files are outdated')
   .action(updateCommand);
 
 program
   .command('status')
   .description('Show bootstrap status and open specs progress')
   .action(statusCommand);
+
+program
+  .command('doctor')
+  .description('Check SDD installation health and provider files')
+  .action(doctorCommand);
+
+program
+  .command('commands')
+  .description('List agent commands installed by provider integrations')
+  .action(commandsCommand);
 
 program.parseAsync();
