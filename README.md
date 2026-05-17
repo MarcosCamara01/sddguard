@@ -4,62 +4,61 @@
 [![node](https://img.shields.io/node/v/sddx-workflow)](https://nodejs.org)
 [![license](https://img.shields.io/npm/l/sddx-workflow)](LICENSE)
 
-Slash-command workflows for AI-assisted projects.
+Spec-Driven Development for AI-assisted projects.
 
-`sddx-workflow` installs a local Spec-Driven Development protocol for AI agents. The CLI is intentionally small: it copies Markdown command definitions into your project, then you work inside your agent chat with commands like `/spec-plan`, `/spec-tasks`, `/verify`, and `/finish`.
-
-Works with any project: Next.js, Python, React, Django, Go, Rails.
-Provider templates are included for Claude Code, OpenAI Codex, GitHub Copilot, Gemini CLI, Windsurf, Cursor, and Zed.
+`sddx-workflow` installs a local protocol that guides AI agents through
+**clarify → plan → execute → verify → review**, stopping at explicit gates where a
+human approves before the agent continues. The CLI is intentionally small: it copies
+Markdown command definitions into your repo, then you work inside your agent chat with
+commands like `/spec-plan`, `/spec-tasks`, `/verify`, and `/finish`.
 
 ```bash
 npx sddx-workflow init
 ```
 
-After that, the main workflow happens in your AI agent:
+Works with any stack (Next.js, Python, Go, Rails, …) and ships provider templates for
+**Claude Code, OpenAI Codex, GitHub Copilot, Gemini CLI, Windsurf, Cursor, and Zed**.
+
+After install, the workflow happens inside your AI agent:
 
 ```text
 /spec-new auth-refresh
-/spec-plan auth-refresh
-/spec-tasks auth-refresh
-/verify auth-refresh
-/review auth-refresh
-/finish
+/spec-plan auth-refresh      # stops for your approval before any code
+/spec-tasks auth-refresh     # executes one task at a time
+/verify auth-refresh         # mechanical audit — writes verify-report.md
+/review auth-refresh         # qualitative final pass
+/finish                      # stage files + propose a commit message
 ```
 
 ---
 
-## What this is
+## Mental model
 
-`sddx-workflow` is an installer for local AI-agent workflows.
+There is no daemon, server, database, or task runner. `sddx-workflow` is an
+**installer** for plain-Markdown protocol files your repo owns and you can edit.
 
-It gives your agent a protocol for:
+Two command surfaces:
 
-- clarifying requirements before planning;
-- writing an approved technical plan before coding;
-- executing one task at a time with test-first discipline;
-- stopping on implementation gaps instead of improvising;
-- recording post-approval changes as Change Requests;
-- verifying implementation coverage before final review.
+- **CLI commands** run in your terminal — install, status, config:
+  `npx sddx-workflow init`, `sddx-workflow status`, `sddx-workflow set-ceremony team`.
+- **Agent commands** run inside your AI tool — the actual workflow:
+  `/spec-plan`, `/spec-tasks`, `/verify`, `/finish`.
 
-It is **not** a daemon, server, background process, database, or full task runner. Most commands are Markdown instructions executed by your agent, not terminal subcommands.
-
-There are two command surfaces:
-
-- **CLI commands** run in your terminal: `npx sddx-workflow init`, `sddx-workflow status`, `sddx-workflow snapshot auth-flow`.
-- **Agent commands** run inside your AI tool: `/spec-plan`, `/spec-tasks`, `/verify`, `/finish`.
+The agent reads `.sdd/workflow.md` before every task. That file defines the commands,
+ceremony levels, per-phase permissions, and **non-negotiable stop points**. The agent
+drafts plans and reports; the human approves structural decisions. Each feature lives
+in `specs/<feature>/` as Markdown you can read and diff.
 
 ---
 
 ## Why this exists
 
-AI agents tend to implement without validating assumptions, refactor more than asked, and silently make structural decisions when requirements are unclear.
+Left unsupervised, AI agents implement before validating assumptions, refactor more
+than asked, add dependencies silently, and have no model of *when to stop and ask*.
 
-This protocol gives the agent explicit stop points:
-
-- plan before code;
-- ask before guessing;
-- verify before finish;
-- amend specs through a visible CR instead of editing approved docs silently.
+This protocol gives the agent explicit stop points: plan before code, ask before
+guessing, verify before finish, and amend approved specs through a visible Change
+Request instead of editing them silently.
 
 ---
 
@@ -68,29 +67,29 @@ This protocol gives the agent explicit stop points:
 New project:
 
 ```bash
-# 1. Initialize the workflow in your project
+# 1. Install the protocol (prompts for ceremony level + which agents to set up)
 npx sddx-workflow init
 
-# 2. Populate project context (run with your AI agent)
+# 2. Populate project context — run inside your AI agent
 /bootstrap
 
 # 3. Build a feature, using a real feature name
 /spec-new auth-refresh
-/spec-plan auth-refresh     # stops for your approval before code
-/spec-tasks auth-refresh    # snapshots first, then executes task by task
+/spec-plan auth-refresh     # STOPS for your approval before any code
+/spec-tasks auth-refresh    # executes task by task
 /verify auth-refresh        # mechanical audit — writes verify-report.md
 /review auth-refresh        # qualitative final pass
 /finish                     # stage files + propose a commit message
 ```
 
-Existing project:
+Existing codebase:
 
 ```bash
 npx sddx-workflow init --existing
 
-# Then ask your agent to discover the codebase before writing context files:
-/scan
-/bootstrap --scan
+# Then have the agent discover the code before writing context files:
+/scan                       # discovery only — writes scan-report.md
+/bootstrap --scan           # proposes project-overview.md + conventions.md for approval
 ```
 
 ---
@@ -99,56 +98,128 @@ npx sddx-workflow init --existing
 
 | Situation | Use |
 |---|---|
-| Small confirmed bug | `/bugfix` → `/finish` |
+| Small confirmed bug (≤ ~50 lines, 1 file) | `/bugfix` → `/finish` |
 | Behavior-preserving cleanup | `/refactor` → `/finish` |
-| New feature | `/spec-new <name>` → `/spec-plan <name>` → `/spec-tasks <name>` |
+| New feature | `/spec-new <name>` → `/spec-plan <name>` → `/spec-tasks <name>` → `/verify` → `/review` → `/finish` |
 | Unsure how the code works | `/ask` |
 | Comparing libraries or approaches | `/research <feature> <topic>` |
-| Requirements are ambiguous before planning | `/spec-clarify <feature>` |
-| Implementation is blocked mid-task | `/impl-gap <feature>` |
+| Requirements ambiguous before planning | `/spec-clarify <feature>` |
+| Implementation blocked mid-task | `/impl-gap <feature>` |
 | Approved requirements or plan must change | `/spec-amend <feature> <change-summary>` |
-| Work is done and needs audit | `/verify <feature>` → `/review <feature>` |
+| Work done, needs audit | `/verify <feature>` → `/review <feature>` |
 
-Most commands are protocol instructions for the agent, stored as local Markdown. The CLI stays small on purpose: it installs the protocol, manages ceremony/config, reports status, and creates snapshots.
+---
+
+## Ceremony levels
+
+`init` asks for a ceremony level (defaults to `team` in non-interactive installs).
+It's stored in `.sdd/config.json` and changeable any time with
+`sddx-workflow set-ceremony`. The level sets the **recommended flow** and the active
+header in `.sdd/workflow.md` — it does not remove commands or enforce runtime
+permissions. The full protocol stays readable for everyone.
+
+| Level | Use when | Feature flow |
+|---|---|---|
+| **Solo / MVP** | Single dev, prototypes, exploratory work | `/spec-plan` → `/spec-tasks` → `/finish` |
+| **Team / Product** *(default)* | Real product, normal cadence | `/spec-new` → `/spec-plan` → `/spec-tasks` → `/verify` → `/review` → `/finish` |
+| **Enterprise** | Compliance, audit trails, multi-team | `/spec-new` → `/spec-clarify` → `/spec-plan` → `/spec-tasks` → `/verify` → `/review` → `/finish` |
+
+```bash
+npx sddx-workflow set-ceremony enterprise   # change level later
+npx sddx-workflow set-ceremony              # interactive picker
+```
+
+Post-approval spec changes go through `/spec-amend`; implementation-time ambiguity
+goes through `/impl-gap`.
+
+---
+
+## Agent commands
+
+20 slash commands, installed for every agent you select. Full contract lives in
+`.sdd/workflow.md`.
+
+### Project setup
+| Command | Purpose |
+|---|---|
+| `/bootstrap` | Populate project context — interview (new) or `--scan` (existing codebase) |
+| `/scan` | Discovery-only pass — writes `scan-report.md`, no `.sdd/` changes |
+| `/conventions-sync` | Refresh `.sdd/conventions.md`, preserving `<!-- manual -->` sections |
+
+### Exploration (read-only)
+| Command | Purpose |
+|---|---|
+| `/ask` | Research and explanation — never modifies anything |
+| `/research` | Compare libraries/patterns → non-binding `research-<topic>.md` |
+| `/assume` | Surface every assumption and stop until they're confirmed |
+
+### Feature flow
+| Command | Purpose |
+|---|---|
+| `/spec-new` | Scaffold `specs/<feature>/` from the template |
+| `/spec-clarify` | Ask blocking/non-blocking questions, record answers in requirements |
+| `/spec-plan` | Generate the technical plan — **stops for approval before any code** |
+| `/spec-tasks` | Execute the plan one atomic task at a time, test-first |
+| `/impl-gap` | Stop and log a blocking ambiguity/contradiction — no improvising |
+| `/spec-amend` | Documented Change Request to edit an already-approved spec |
+| `/spec-analyze` | Cross-consistency check: goals↔tasks, plan↔tasks, scope creep |
+| `/verify` | Strict mechanical audit — read-only `verify-report.md` |
+| `/review` | Lighter qualitative pass — naming, clarity, simplicity |
+| `/finish` | Stage files + draft a conventional commit message (stops to confirm) |
+
+### Multi-spec awareness
+| Command | Purpose |
+|---|---|
+| `/spec-status` | State of every active spec (phase, progress, open CRs/gaps) |
+| `/spec-conflicts` | Detect specs that touch the same files before they collide |
+
+### Quick changes
+| Command | Purpose |
+|---|---|
+| `/bugfix` | Reproduce → diagnose → fix → validate |
+| `/refactor` | Restructure with a green-test invariant, no behavior change |
+
+**`/verify` vs `/review`:** `/verify` is the deterministic audit (tasks complete,
+goals covered, suite green, no out-of-scope edits, no open gaps/CRs). `/review` is the
+qualitative human-touch pass. Both are read-only — neither edits code or specs.
 
 ---
 
 ## CLI reference
 
 ```bash
-npx sddx-workflow init                  # Initialize in current project
-npx sddx-workflow init --existing       # Brownfield next steps: /scan then /bootstrap --scan
-npx sddx-workflow init --force          # Overwrite existing files
+npx sddx-workflow init                  # install protocol (prompts ceremony + agents)
+npx sddx-workflow init --existing       # brownfield: next steps start with /scan
+npx sddx-workflow init --force          # overwrite existing protocol files
 
-npx sddx-workflow add domain auth       # Add a domain file
-npx sddx-workflow add domain payments
-npx sddx-workflow add domain storage
-npx sddx-workflow add domain email
+npx sddx-workflow add domain auth       # add a domain context file (.sdd/domains/auth.md)
+                                        # also: payments, storage, email
 
-npx sddx-workflow status                # Show current workflow state
-npx sddx-workflow snapshot <feature>    # Copy spec files into .sdd/snapshots/
-npx sddx-workflow snapshot <feature> --list
-npx sddx-workflow set-ceremony team     # solo | team | enterprise
-npx sddx-workflow update                # Update workflow templates
+npx sddx-workflow status                # bootstrap state + open specs progress
+npx sddx-workflow update                # refresh protocol files (your config untouched)
+
+npx sddx-workflow set-ceremony <solo|team|enterprise>   # change ceremony level
+npx sddx-workflow set-ceremony                          # interactive picker
 ```
 
-Files are **copied locally** — your project owns them. No runtime dependency. Edit freely.
-
----
+Everything is **copied locally** — your repo owns the files, no runtime dependency,
+edit freely.
 
 ## Updating an existing install
 
-`sddx-workflow update` refreshes workflow files that already exist in your project. It does not silently create newly introduced provider commands in older installs, because that could surprise teams that customized their local workflow.
-
-Use this rule of thumb:
+`sddx-workflow update` refreshes workflow files that **already exist** in your
+project. It does not silently create newly introduced provider commands in older
+installs, because that could surprise teams that customized their local workflow.
 
 | Need | Command |
 |---|---|
 | Refresh files you already have | `sddx-workflow update` |
-| Reinstall everything from the current template set | `sddx-workflow init --force` |
+| Pull in commands added by a newer version | `sddx-workflow init --force` |
 | Add a domain file | `sddx-workflow add domain auth` |
 
-Before using `init --force`, review your local changes to `.sdd/`, provider command files, `CLAUDE.md`, and `AGENTS.md`.
+`update` and `init --force` never touch `project-overview.md`, `conventions.md`,
+`config.json`, or `domains/`. Before `init --force`, review local changes to provider
+command files, `CLAUDE.md`, and `AGENTS.md`.
 
 ---
 
@@ -156,93 +227,65 @@ Before using `init --force`, review your local changes to `.sdd/`, provider comm
 
 ```
 .sdd/
-  workflow.md          # Commands, ceremony levels, stop points
-  project-overview.md  # What this app is — populated by /bootstrap
-  conventions.md       # Stack and patterns — populated by /bootstrap
-  config.json          # Ceremony level and feature flags
-  domains/             # Domain-specific rules (auth, payments, etc.)
-  snapshots/           # Created lazily by sddx-workflow snapshot
+  workflow.md            # commands, ceremony levels, permissions, stop points
+  project-overview.md    # what this app is — populated by /bootstrap
+  conventions.md         # stack & patterns — populated by /bootstrap
+  config.json            # ceremony level
+  domains/               # optional domain rules (auth, payments, …)
 specs/
-  _template/
-    1-requirements.md  # Problem, goals, acceptance criteria (BDD)
-    2-plan.md          # Technical plan — requires approval before coding
-    3-tasks.md         # Atomic task checklist with TDD gate
-    amendments.md      # Change Request log template
-    impl-gaps.md       # Implementation gap log template
-    verify-report.md   # /verify report template
-CLAUDE.md              # Agent entry point — points to .sdd/
+  _template/             # source templates copied by /spec-new
+    1-requirements.md    #   problem, goals (G1…), BDD acceptance criteria
+    2-plan.md            #   approach, tradeoffs, components, abort criteria
+    3-tasks.md           #   atomic task checklist with a TDD gate
+    2a-data-model.md     #   optional: non-trivial persistence
+    2b-api-contracts.md  #   optional: new external contracts
+    2c-research.md       #   optional: research that belongs in the plan
+    amendments.md        #   Change Requests (/spec-amend)
+    impl-gaps.md         #   blocking gaps logged during execution (/impl-gap)
+    analysis.md          #   /spec-analyze output
+    verify-report.md     #   /verify output
+  _done/                 # shipped specs, moved here after verify + review close
+CLAUDE.md                # agent entry point — points at .sdd/
 ```
 
-What you usually edit:
+- **You edit:** `project-overview.md`, `conventions.md`, and per-feature
+  `1-requirements.md` / `2-plan.md` / `3-tasks.md`.
+- **The agent generates as history/reports:** `amendments.md`, `impl-gaps.md`,
+  `analysis.md`, and `verify-report.md`.
 
-- `.sdd/project-overview.md` — product context and non-goals.
-- `.sdd/conventions.md` — stack, file layout, testing, naming, manual conventions.
-- `specs/<feature>/1-requirements.md` — requirements for one feature.
-- `specs/<feature>/2-plan.md` — approved technical plan.
-- `specs/<feature>/3-tasks.md` — task checklist generated from the plan.
-
-What is generated as history or reports:
-
-- `specs/<feature>/amendments.md` — Change Requests after approval.
-- `specs/<feature>/impl-gaps.md` — blocked implementation decisions.
-- `specs/<feature>/verify-report.md` — read-only audit output.
-- `.sdd/snapshots/<feature>/...` — restore points for spec files.
-
----
-
-## Agent commands
-
-| Command | Purpose |
-|---|---|
-| `/bootstrap` | Populate project context via interview or codebase scan |
-| `/scan` | Discovery-only brownfield scan — writes `scan-report.md`, no `.sdd/` writes |
-| `/conventions-sync` | Refresh `.sdd/conventions.md`, preserving `<!-- manual -->` sections |
-| `/ask` | Research and exploration — no code changes |
-| `/research` | Non-binding research artifact before planning |
-| `/assume` | Surface all assumptions before acting |
-| `/bugfix` | Reproduce → diagnose → fix → validate |
-| `/refactor` | Restructure without behavior change (green baseline required) |
-| `/spec-new` | Scaffold a spec folder for a feature |
-| `/spec-clarify` | Structured pre-plan clarification |
-| `/spec-plan` | Generate technical plan — **stops for approval before any code** |
-| `/spec-tasks` | Execute plan one atomic task at a time, TDD-first |
-| `/impl-gap` | Stop and report implementation-time ambiguity |
-| `/spec-amend` | Change Request for post-approval spec edits |
-| `/spec-restore` | Restore spec files from a snapshot |
-| `/spec-analyze` | Cross-consistency analysis across requirements, plan, and tasks |
-| `/verify` | Strict mechanical audit — report only |
-| `/review` | Qualitative final pass after `/verify` |
-| `/spec-status` | Show all active specs and their phase |
-| `/spec-conflicts` | Detect planned file conflicts across active specs |
-| `/finish` | Stage files + generate conventional commit message |
-
-### Ceremony levels
-
-`init` asks for a ceremony level in interactive terminals and defaults to `team` in non-TTY installs.
-
-Ceremony levels guide the recommended flow. They do not remove commands or enforce runtime permissions; the full protocol stays readable in `.sdd/workflow.md`.
-
-| Level | Feature flow |
-|---|---|
-| Solo / MVP | `/spec-plan` → `/spec-tasks` → `/finish` |
-| Team / Product | `/spec-new` → `/spec-plan` → `/spec-tasks` → `/verify` → `/review` → `/finish` |
-| Enterprise | `/spec-new` → `/spec-clarify` → `/spec-plan` → `/spec-tasks` → `/verify` → `/review` → `/finish` |
-
-Post-approval spec changes go through `/spec-amend`; implementation-time ambiguity goes through `/impl-gap`.
+Per selected agent, command files are also installed (see Provider support).
 
 ---
 
 ## How approval works
 
-The agent is allowed to draft plans and reports, but structural decisions stay with the human.
+The agent may draft plans and reports, but structural decisions stay with the human.
 
 - `/spec-plan` stops before code. You approve the plan before `/spec-tasks`.
 - `/spec-tasks` can edit code and tests, but not approved requirements or plan files.
-- `/impl-gap` records a blocker and waits for direction.
-- `/spec-amend` records a Change Request and waits for approval before changing `1-requirements.md` or `2-plan.md`.
+- `/impl-gap` records a blocker and waits for direction — no improvising.
+- `/spec-amend` records a Change Request and waits for approval before changing
+  `1-requirements.md` or `2-plan.md`.
 - `/verify` and `/review` are read-only, except for their report output.
 
-This is intentionally not a daemon, server, or database. The workflow is plain files plus agent instructions.
+---
+
+## Spec structure
+
+Each feature lives in `specs/<name>/`. Three core files gate progress:
+
+- **`1-requirements.md`** — problem, measurable goals (G1, G2…), BDD acceptance
+  criteria, constraints, blocking vs. non-blocking open questions, and a
+  Clarifications section populated by `/spec-clarify`.
+- **`2-plan.md`** — goals coverage, assumptions confirmed via `/assume`, approach +
+  tradeoffs, components affected, abort criteria. *Requires explicit approval before
+  any code is written.*
+- **`3-tasks.md`** — one atomic task at a time; each names the test to write first
+  (red → green), files to change, and the goal ID it serves.
+
+Once approved, `1-requirements.md` and `2-plan.md` are read-only — changes go through
+`/spec-amend`. After `/verify` and `/review` close cleanly, the spec moves to
+`specs/_done/`.
 
 ---
 
@@ -258,7 +301,8 @@ This is intentionally not a daemon, server, or database. The workflow is plain f
 | Cursor | `.cursor/rules/sddx-workflow.mdc` |
 | Zed | `.rules` |
 
-Providers with native slash-command or workflow support get per-command files. Rule-only providers get the protocol as project context.
+Providers with native slash-command or workflow support get per-command files.
+Rule-only providers get the protocol as always-on project context.
 
 ---
 
@@ -266,23 +310,22 @@ Providers with native slash-command or workflow support get per-command files. R
 
 Enforced by every command:
 
-1. **Surface assumptions** — list them before acting, not mid-execution
-2. **Minimum code** — only what was asked; no "while I'm here" changes
-3. **Surgical changes** — touch only what the task requires
-4. **Verify before moving on** — define "done" before starting, not after
-5. **Use the right channel for changes** — `/impl-gap` for blocked tasks, `/spec-amend` for approved spec edits
+1. **Surface assumptions** — list them before acting, not mid-execution.
+2. **Minimum code** — only what was asked; no "while I'm here" changes.
+3. **Surgical changes** — touch only what the task requires.
+4. **Verify before moving on** — define "done" before starting, not after.
+5. **Use the right channel for changes** — `/impl-gap` for blocked tasks,
+   `/spec-amend` for approved spec edits. Never edit approved specs silently.
 
 ---
 
-## Spec structure
+## Design principles
 
-Each feature lives in `specs/<name>/` with three files:
-
-**`1-requirements.md`** — Problem, measurable goals (G1, G2…), BDD acceptance criteria, constraints, open questions (blocking vs. non-blocking).
-
-**`2-plan.md`** — Goals coverage, assumptions confirmed via `/assume`, approach + tradeoffs, components affected, abort criteria. Requires explicit approval before execution starts.
-
-**`3-tasks.md`** — One task at a time. Each has: test to write first (red → green), files to change, goal ID, and acceptance scenario. Completed specs move to `specs/_done/`.
+- **Zero runtime dependency** — files copied locally, no server, daemon, or watcher.
+- **npx-first** — one command, no Python/uv/pipx.
+- **The human decides, the agent executes** — no automated structural decisions.
+- **Minimum ceremony by default** — advanced flow is opt-in per ceremony level.
+- **Files you can read** — pure Markdown, no databases, no binary formats.
 
 ---
 
@@ -293,7 +336,7 @@ git clone https://github.com/MarcosCamara01/sddx-workflow.git
 cd sddx-workflow
 npm install
 npm run dev      # watch mode
-npm run build    # production build
+npm run build    # production build → dist/cli.js
 ```
 
 ### Publishing
@@ -304,7 +347,7 @@ npm version minor   # new feature: 0.1.0 → 0.2.0
 npm publish
 ```
 
-Users running `npx sddx-workflow init` always get the latest version. Existing `.sdd/` files are never overwritten on update — use `--force` to explicitly replace them.
+Users running `npx sddx-workflow init` always get the latest version.
 
 ---
 
