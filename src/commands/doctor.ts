@@ -2,6 +2,9 @@ import fs from 'fs';
 import path from 'path';
 import { CORE_FILES, ProviderId, PROVIDERS } from '../providers';
 
+const WORKFLOW_PATH = '.sdd/workflow.md';
+const WORKFLOW_MARKER = '# SDD Protocol';
+
 const OBSOLETE_PATHS = [
   'src/commands/snapshot.ts',
   'templates/claude-commands/spec-restore.md',
@@ -80,6 +83,16 @@ export function doctorCommand(): void {
   console.log(`  obsolete      ${obsolete.length === 0 ? 'none' : `${obsolete.length} found`}`);
   for (const item of obsolete) {
     warnings.push(`Obsolete snapshot/restore file remains: ${item}`);
+  }
+
+  if (exists(cwd, WORKFLOW_PATH)) {
+    const firstLine = fs.readFileSync(path.join(cwd, WORKFLOW_PATH), 'utf8').split('\n', 1)[0].trim();
+    if (!firstLine.startsWith(WORKFLOW_MARKER)) {
+      warnings.push(
+        `${WORKFLOW_PATH} does not look like an sddx-workflow file (header: "${firstLine.slice(0, 60)}"). ` +
+        'Was it from a different tool? Run `npx sddx-workflow init --force` to replace it.'
+      );
+    }
   }
 
   console.log('');
