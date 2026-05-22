@@ -84,7 +84,7 @@ Non-obvious:
 - **Adding runtime behavior to the target project.** This tool is an installer. No "watch", "daemon", "lint", or "hook" features without an explicit architecture decision — it would break the zero-runtime invariant.
 - **Silent overwrites.** `copyTemplate` skips existing files unless `force` is passed ([src/utils.ts:22-29](src/utils.ts#L22-L29)). New code paths must preserve that contract; never use `fs.writeFileSync` to clobber user-owned files.
 - **Bundling templating engines or markdown processors.** Templates are copied as bytes. If a template needs variable substitution, surface that as a design decision first.
-- **Treating `doctor`/`status` exit codes as gospel without checking the bugs.** Still-open in HEAD: B-02 (`doctor` never exits non-zero) and B-03 (`status` false-positive "verify failed"). See [QA_REPORT.md](QA_REPORT.md) and the Known Bugs section of [project-overview.md](.sdd/project-overview.md).
+- **Treating `doctor`/`status` exit codes as gospel without smoke-testing edge cases.** Prior QA bugs around `doctor` exits and `status` verify parsing have been fixed, but these commands still need explicit smoke coverage because there is no automated test suite yet.
 - **Letting `dist/` or `node_modules/` leak into git.** Already gitignored ([.gitignore](.gitignore)) — keep it that way.
 
 ## Testing
@@ -95,7 +95,7 @@ Non-obvious:
 - **Smoke procedure for a CLI-side change:**
   1. `npm run build` — must succeed and produce `dist/cli.js` (pure tsup; no chmod step since commit `07d8a61`).
   2. Smoke-test against a scratch directory: `mkdir /tmp/sdd-smoke && cd /tmp/sdd-smoke && node /path/to/sddx-workflow/dist/cli.js init --all`, inspect output.
-  3. Run `doctor` and `status` against the smoke install — but cross-check with QA_REPORT's known bugs (B-02, B-03) before trusting the result.
+  3. Run `doctor` and `status` against the smoke install, including any affected edge case from QA_REPORT.
   4. Re-run the affected row from QA_REPORT's verification matrix.
 - **For protocol-only changes (Markdown under `templates/`):** open the generated file in an actual agent and walk through the affected command path. Provider parity must hold across all command-aware providers.
 - **When introducing a test framework:** surface it via `/research` before adopting (Jest vs Vitest vs node:test, ESM vs CJS impact on tsup output, etc.). The current zero-test state is a gap to close, but how to close it is itself a real design decision.

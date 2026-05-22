@@ -51,13 +51,13 @@ The current manual-verification record lives at the repo root (untracked):
 - **[QA_REPORT.md](QA_REPORT.md)** — full audit of the v0.10.0 surface, dated 2026-05-19. 6/6 CLI commands and 8/20 agent commands exercised end-to-end on a sandbox project. Verdict: GO on the golden path.
 - **[WORKFLOW_REVIEW.md](WORKFLOW_REVIEW.md)** — qualitative agent-perspective review of the protocol itself.
 
-### Known bugs in v0.10.0 (from QA_REPORT)
+### QA bugfix status from v0.10.0
 
-These exist in the currently published version and are open until fixed:
+Highlights found in the v0.10.0 QA pass and addressed in this repo:
 
-- **B-02 (HIGH) — `doctor` never exits non-zero.** [src/commands/doctor.ts:43](src/commands/doctor.ts#L43) declares `const issues: string[] = []` but nothing ever pushes into it; the `if (issues.length > 0) process.exit(1)` at line 100 is unreachable. A CI gate using `doctor` will pass on broken installs.
-- **B-03 (MEDIUM) — `status` reports "verify failed" on healthy `verify-report.md`.** False-positive regex.
-- **B-04 (LOW) — `commands` subcommand is static.** Lists every COMMAND_NAMES entry rather than inspecting the actual install.
+- **B-02 (HIGH) — `doctor` never exited non-zero.** Fixed: missing core files and no provider files are now errors.
+- **B-03 (MEDIUM) — `status` reported "verify failed" on healthy `verify-report.md`.** Fixed: `status` reads the `Result:` header line only.
+- **B-04 (LOW) — `commands` subcommand description was misleading.** Fixed: help text now describes the static protocol catalog.
 - ~~**B-01 (MEDIUM) — `npm run build` `chmod +x` step fails on Windows.**~~ **Fixed in `07d8a61`** — the `chmod` step was dropped from the build script entirely; the tsup banner + npm's bin handling cover the executable bit.
 
-Any new work that touches these files should consider folding the fix in, or leave the line untouched to keep the fix patch atomic.
+Future QA findings should be recorded here until they are fixed or moved into a dedicated issue tracker.

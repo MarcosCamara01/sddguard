@@ -6,6 +6,10 @@ asignación + notificaciones), aquí va mi opinión honesta. No es un audit
 — para eso está [QA_REPORT.md](QA_REPORT.md). Es la voz de un agente que
 ha vivido dentro del protocolo.*
 
+> Historical review: bug references below describe the workflow state from the
+> original review session. Current fix status is tracked in
+> [BUGFIX_PROMPTS.md](BUGFIX_PROMPTS.md).
+
 ---
 
 ## 1. Cosas buenas

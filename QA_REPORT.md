@@ -7,6 +7,9 @@
 Build: `npm run build` (tsup OK, `chmod` step Windows-fails — see B-01).
 Tested commit: working tree (no source edits during QA).
 
+> Historical report: the findings below describe the 2026-05-19 QA pass.
+> Current fix status is tracked in [BUGFIX_PROMPTS.md](BUGFIX_PROMPTS.md).
+
 ---
 
 ## 1. Executive summary

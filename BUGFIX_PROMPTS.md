@@ -7,16 +7,18 @@ Copia el bloque entre `▼▼▼` y `▲▲▲` de un bug y pégalo en un chat n
 | Bug | Severidad | Título | Estado |
 |---|---|---|---|
 | B-01 | MED | `npm run build` falla en Windows (chmod) | ✅ commit `07d8a61` |
-| **B-02** | **HIGH** | `doctor` nunca exit ≠ 0 | ⬜ pendiente |
-| **B-03** | **MED** | `status` FAIL regex false-positive | ⬜ pendiente |
-| B-08 | MED | `init` skipea pre-existing foreign `workflow.md` | ⬜ pendiente |
-| B-04 | MED | `commands` description engaña | ⬜ pendiente |
-| P-01 | LOW | `/spec-conflicts` incluye specs done pero no movidos | ⬜ pendiente |
-| P-02 | LOW | `/assume` no dice dónde aterrizan assumptions | ⬜ pendiente |
-| P-03 | LOW | `/review` warnings ack no se persiste | ⬜ pendiente |
-| B-07 | LOW | Drift en `/finish` entre providers | ⬜ pendiente |
-| B-05 | LOW | `add domain` con lista cerrada de 4 | ⬜ pendiente |
-| B-06 | LOW | `init` sin TTY instala todos en silencio | ⬜ pendiente |
+| **B-02** | **HIGH** | `doctor` nunca exit ≠ 0 | ✅ verificado |
+| **B-03** | **MED** | `status` FAIL regex false-positive | ✅ verificado |
+| B-08 | MED | `init` skipea pre-existing foreign `workflow.md` | ✅ verificado |
+| B-04 | MED | `commands` description engaña | ✅ arreglado |
+| P-01 | LOW | `/spec-conflicts` incluye specs done pero no movidos | ✅ arreglado |
+| P-02 | LOW | `/assume` no dice dónde aterrizan assumptions | ✅ arreglado |
+| P-03 | LOW | `/review` warnings ack no se persiste | ✅ arreglado |
+| B-07 | LOW | Drift en `/finish` entre providers | ✅ arreglado |
+| B-05 | LOW | `add domain` con lista cerrada de 4 | ✅ arreglado |
+| B-06 | LOW | `init` sin TTY instala todos en silencio | ✅ arreglado |
+
+Los bloques inferiores se conservan como repro histórico de cada bug.
 
 ---
 ---
