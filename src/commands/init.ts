@@ -1,8 +1,15 @@
-import path from 'path';
-import fs from 'fs';
+import fs from 'node:fs';
+import path from 'node:path';
 import { checkbox } from '@inquirer/prompts';
-import { ensureDir, copyTemplate } from '../utils';
-import { ALL_PROVIDER_IDS, COMMAND_PROVIDER_IDS, CORE_FILES, PROVIDERS, ProviderId, parseProviderList } from '../providers';
+import {
+  ALL_PROVIDER_IDS,
+  COMMAND_PROVIDER_IDS,
+  CORE_FILES,
+  PROVIDERS,
+  type ProviderId,
+  parseProviderList,
+} from '../providers';
+import { copyTemplate, ensureDir } from '../utils';
 
 interface InitOptions {
   force?: boolean;
@@ -52,6 +59,8 @@ function formatList(items: string[]): string {
   return items.length > 0 ? items.join(', ') : 'none';
 }
 
+const USER_OWNED_CORE_FILES = new Set(['.sdd/project-overview.md', '.sdd/conventions.md']);
+
 export async function initCommand(options: InitOptions): Promise<void> {
   const cwd = process.cwd();
   const { force, existing } = options;
@@ -78,7 +87,8 @@ export async function initCommand(options: InitOptions): Promise<void> {
   const agentsExisted = fs.existsSync(path.join(cwd, 'AGENTS.md'));
 
   for (const file of CORE_FILES) {
-    copyTemplate(file.src, path.join(cwd, file.dest), force);
+    const shouldForce = force && !USER_OWNED_CORE_FILES.has(file.dest);
+    copyTemplate(file.src, path.join(cwd, file.dest), shouldForce);
   }
 
   for (const id of selectedProviders) {
@@ -87,49 +97,63 @@ export async function initCommand(options: InitOptions): Promise<void> {
     }
   }
 
-  const providerNames = selectedProviders.map(id => PROVIDERS[id].name);
-  const commandProviders = selectedProviders.filter(id => COMMAND_PROVIDER_IDS.includes(id));
-  const rulesOnly = selectedProviders.filter(id => !COMMAND_PROVIDER_IDS.includes(id));
+  const providerNames = selectedProviders.map((id) => PROVIDERS[id].name);
+  const commandProviders = selectedProviders.filter((id) => COMMAND_PROVIDER_IDS.includes(id));
+  const rulesOnly = selectedProviders.filter((id) => !COMMAND_PROVIDER_IDS.includes(id));
 
   console.log('');
   console.log('  SDD Workflow initialized');
   console.log('');
   console.log(`  Providers: ${formatList(providerNames)}`);
-  console.log(`  Core:      .sdd/workflow.md, .sdd/project-overview.md, .sdd/conventions.md, specs/_template/`);
+  console.log(
+    `  Core:      .sdd/workflow.md, .sdd/project-overview.md, .sdd/conventions.md, specs/_template/`,
+  );
   if (commandProviders.length > 0) {
-    const names = commandProviders.map(id => PROVIDERS[id].name);
+    const names = commandProviders.map((id) => PROVIDERS[id].name);
     console.log(`  Commands:  ${formatList(names)}`);
   }
   if (rulesOnly.length > 0) {
-    const names = rulesOnly.map(id => PROVIDERS[id].name);
+    const names = rulesOnly.map((id) => PROVIDERS[id].name);
     console.log(`  Rules:     ${formatList(names)}`);
   }
   console.log('');
   console.log('  Next steps:');
   console.log('');
   if (existing) {
-    console.log('  1. Run /scan to discover the codebase (no .sdd/ writes — produces scan-report.md)');
-    console.log('     then /bootstrap --scan to populate .sdd/project-overview.md and .sdd/conventions.md');
+    console.log(
+      '  1. Run /scan to discover the codebase (no .sdd/ writes — produces scan-report.md)',
+    );
+    console.log(
+      '     then /bootstrap --scan to populate .sdd/project-overview.md and .sdd/conventions.md',
+    );
   } else {
     console.log('  1. Run /bootstrap to populate project context (new project)');
-    console.log('     or /bootstrap --scan to let the agent analyze the codebase (existing project)');
+    console.log(
+      '     or /bootstrap --scan to let the agent analyze the codebase (existing project)',
+    );
   }
 
   const entryMessages: string[] = [];
   if (selectedProviders.includes('claude-code')) {
-    entryMessages.push(claudeExisted
-      ? 'CLAUDE.md already exists — add a reference to .sdd/ files manually'
-      : 'CLAUDE.md was created — Claude Code will read it automatically');
+    entryMessages.push(
+      claudeExisted
+        ? 'CLAUDE.md already exists — add a reference to .sdd/ files manually'
+        : 'CLAUDE.md was created — Claude Code will read it automatically',
+    );
   }
   if (selectedProviders.includes('gemini')) {
-    entryMessages.push(geminiExisted
-      ? 'GEMINI.md already exists — add a reference to .sdd/ files manually'
-      : 'GEMINI.md was created — Gemini CLI will read it automatically');
+    entryMessages.push(
+      geminiExisted
+        ? 'GEMINI.md already exists — add a reference to .sdd/ files manually'
+        : 'GEMINI.md was created — Gemini CLI will read it automatically',
+    );
   }
   if (selectedProviders.includes('codex')) {
-    entryMessages.push(agentsExisted
-      ? 'AGENTS.md already exists — add a reference to .sdd/ files manually'
-      : 'AGENTS.md was created — Codex will read it automatically');
+    entryMessages.push(
+      agentsExisted
+        ? 'AGENTS.md already exists — add a reference to .sdd/ files manually'
+        : 'AGENTS.md was created — Codex will read it automatically',
+    );
   }
 
   let nextStep = 2;
@@ -143,13 +167,15 @@ export async function initCommand(options: InitOptions): Promise<void> {
   }
 
   if (commandProviders.length > 0) {
-    const names = commandProviders.map(id => PROVIDERS[id].name).join(', ');
+    const names = commandProviders.map((id) => PROVIDERS[id].name).join(', ');
     console.log(`  ${nextStep}. Slash commands ready in: ${names}. Type / to see them.`);
     nextStep++;
   }
   if (rulesOnly.length > 0) {
-    const names = rulesOnly.map(id => PROVIDERS[id].name).join(', ');
-    console.log(`  ${nextStep}. Context rules installed for: ${names}. The agent reads workflow.md on every task.`);
+    const names = rulesOnly.map((id) => PROVIDERS[id].name).join(', ');
+    console.log(
+      `  ${nextStep}. Context rules installed for: ${names}. The agent reads workflow.md on every task.`,
+    );
   }
   console.log('');
 }
