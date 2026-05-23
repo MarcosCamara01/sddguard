@@ -1,6 +1,13 @@
 import { COMMAND_NAMES } from './commands/command-names';
 
-export type ProviderId = 'claude-code' | 'cursor' | 'windsurf' | 'copilot' | 'codex' | 'gemini' | 'zed';
+export type ProviderId =
+  | 'claude-code'
+  | 'cursor'
+  | 'windsurf'
+  | 'copilot'
+  | 'codex'
+  | 'gemini'
+  | 'zed';
 
 export interface InstallFile {
   src: string;
@@ -29,28 +36,28 @@ export const CORE_FILES: InstallFile[] = [
   { src: 'specs/_template/2c-research.md', dest: 'specs/_template/2c-research.md' },
 ];
 
-const claudeCommandFiles = COMMAND_NAMES.map(name => ({
+const claudeCommandFiles = COMMAND_NAMES.map((name) => ({
   src: `claude-commands/${name}.md`,
   dest: `.claude/commands/${name}.md`,
 }));
 
-const copilotPromptFiles = COMMAND_NAMES.map(name => ({
+const copilotPromptFiles = COMMAND_NAMES.map((name) => ({
   src: `copilot-prompts/${name}.prompt.md`,
   dest: `.github/prompts/${name}.prompt.md`,
 }));
 
-const geminiCommandFiles = COMMAND_NAMES.map(name => ({
+const geminiCommandFiles = COMMAND_NAMES.map((name) => ({
   src: `gemini-commands/${name}.toml`,
   dest: `.gemini/commands/${name}.toml`,
 }));
 
-const windsurfWorkflowFiles = COMMAND_NAMES.map(name => ({
+const windsurfWorkflowFiles = COMMAND_NAMES.map((name) => ({
   src: `windsurf-workflows/${name}.md`,
   dest: `.windsurf/workflows/${name}.md`,
 }));
 
-const codexSkillDirs = COMMAND_NAMES.map(name => `.agents/skills/${name}`);
-const codexSkillFiles = COMMAND_NAMES.map(name => ({
+const codexSkillDirs = COMMAND_NAMES.map((name) => `.agents/skills/${name}`);
+const codexSkillFiles = COMMAND_NAMES.map((name) => ({
   src: `codex-skills/${name}/SKILL.md`,
   dest: `.agents/skills/${name}/SKILL.md`,
 }));
@@ -59,17 +66,12 @@ export const PROVIDERS: Record<ProviderId, Provider> = {
   'claude-code': {
     name: 'Claude Code',
     dirs: ['.claude/commands'],
-    files: [
-      { src: 'CLAUDE.md', dest: 'CLAUDE.md' },
-      ...claudeCommandFiles,
-    ],
+    files: [{ src: 'CLAUDE.md', dest: 'CLAUDE.md' }, ...claudeCommandFiles],
   },
   cursor: {
     name: 'Cursor',
     dirs: ['.cursor/rules'],
-    files: [
-      { src: 'cursor-rules/sddx-workflow.mdc', dest: '.cursor/rules/sddx-workflow.mdc' },
-    ],
+    files: [{ src: 'cursor-rules/sddx-workflow.mdc', dest: '.cursor/rules/sddx-workflow.mdc' }],
   },
   windsurf: {
     name: 'Windsurf',
@@ -90,44 +92,45 @@ export const PROVIDERS: Record<ProviderId, Provider> = {
   codex: {
     name: 'OpenAI Codex',
     dirs: codexSkillDirs,
-    files: [
-      { src: 'AGENTS.md', dest: 'AGENTS.md' },
-      ...codexSkillFiles,
-    ],
+    files: [{ src: 'AGENTS.md', dest: 'AGENTS.md' }, ...codexSkillFiles],
   },
   gemini: {
     name: 'Gemini CLI',
     dirs: ['.gemini/commands'],
-    files: [
-      { src: 'gemini.md', dest: 'GEMINI.md' },
-      ...geminiCommandFiles,
-    ],
+    files: [{ src: 'gemini.md', dest: 'GEMINI.md' }, ...geminiCommandFiles],
   },
   zed: {
     name: 'Zed',
     dirs: [],
-    files: [
-      { src: 'zed-rules/sddx-workflow.md', dest: '.rules' },
-    ],
+    files: [{ src: 'zed-rules/sddx-workflow.md', dest: '.rules' }],
   },
 };
 
 export const ALL_PROVIDER_IDS = Object.keys(PROVIDERS) as ProviderId[];
 
-export const COMMAND_PROVIDER_IDS: ProviderId[] = ['claude-code', 'copilot', 'codex', 'gemini', 'windsurf'];
+export const COMMAND_PROVIDER_IDS: ProviderId[] = [
+  'claude-code',
+  'copilot',
+  'codex',
+  'gemini',
+  'windsurf',
+];
 
 export const WORKFLOW_FILES: InstallFile[] = [
   { src: 'workflow.md', dest: '.sdd/workflow.md' },
-  ...Object.values(PROVIDERS).flatMap(provider => provider.files),
+  ...Object.values(PROVIDERS).flatMap((provider) => provider.files),
 ];
 
 export function parseProviderList(value: string): ProviderId[] {
-  const rawIds = value.split(',').map(id => id.trim()).filter(Boolean);
+  const rawIds = value
+    .split(',')
+    .map((id) => id.trim())
+    .filter(Boolean);
   if (rawIds.length === 0) {
     throw new Error('Provider list cannot be empty');
   }
 
-  const invalid = rawIds.filter(id => !ALL_PROVIDER_IDS.includes(id as ProviderId));
+  const invalid = rawIds.filter((id) => !ALL_PROVIDER_IDS.includes(id as ProviderId));
 
   if (invalid.length > 0) {
     throw new Error(`Unknown provider: ${invalid.join(', ')}`);

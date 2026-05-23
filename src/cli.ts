@@ -1,35 +1,44 @@
+import { createRequire } from 'node:module';
 import { Command } from 'commander';
-import { initCommand } from './commands/init';
 import { addCommand } from './commands/add';
-import { updateCommand } from './commands/update';
-import { statusCommand } from './commands/status';
-import { doctorCommand } from './commands/doctor';
 import { commandsCommand } from './commands/commands';
-import { createRequire } from 'module';
+import { doctorCommand } from './commands/doctor';
+import { initCommand } from './commands/init';
+import { statusCommand } from './commands/status';
+import { updateCommand } from './commands/update';
 
 const pkg = createRequire(__filename)('../package.json') as { version: string };
 
 const program = new Command();
 
-program
-  .name('sddx-workflow')
-  .description('Spec-Driven Development CLI')
-  .version(pkg.version);
+program.name('sddx-workflow').description('Spec-Driven Development CLI').version(pkg.version);
 
 program
   .command('init')
   .description('Initialize SDD protocol in the current project')
   .option('--force', 'Overwrite files that already exist')
-  .option('--existing', 'Brownfield mode: prints next-steps that start with /scan and /bootstrap --scan')
-  .option('--provider <ids>', 'Comma-separated providers to install (claude-code,cursor,windsurf,copilot,codex,gemini,zed)')
+  .option(
+    '--existing',
+    'Brownfield mode: prints next-steps that start with /scan and /bootstrap --scan',
+  )
+  .option(
+    '--provider <ids>',
+    'Comma-separated providers to install (claude-code,cursor,windsurf,copilot,codex,gemini,zed)',
+  )
   .option('--all', 'Install all provider integrations without prompting')
-  .addHelpText('after', '\nNon-TTY default:\n  When stdout is not a TTY (CI, piped scripts), init defaults to installing\n  every provider - equivalent to --all. Pass --provider to limit.\n')
+  .addHelpText(
+    'after',
+    '\nNon-TTY default:\n  When stdout is not a TTY (CI, piped scripts), init defaults to installing\n  every provider - equivalent to --all. Pass --provider to limit.\n',
+  )
   .action(initCommand);
 
 program
   .command('add <type> <name>')
   .description('Add an SDD component to an existing installation')
-  .addHelpText('after', '\nExamples:\n  $ sddx-workflow add domain auth\n  $ sddx-workflow add domain payments')
+  .addHelpText(
+    'after',
+    '\nExamples:\n  $ sddx-workflow add domain auth\n  $ sddx-workflow add domain payments',
+  )
   .action(addCommand);
 
 program

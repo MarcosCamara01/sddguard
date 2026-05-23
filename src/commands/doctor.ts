@@ -1,6 +1,6 @@
-import fs from 'fs';
-import path from 'path';
-import { CORE_FILES, ProviderId, PROVIDERS } from '../providers';
+import fs from 'node:fs';
+import path from 'node:path';
+import { CORE_FILES, PROVIDERS, type ProviderId } from '../providers';
 
 const WORKFLOW_PATH = '.sdd/workflow.md';
 const WORKFLOW_MARKER = '# SDD Protocol';
@@ -35,10 +35,10 @@ function providerHealth(cwd: string): ProviderHealth[] {
     .map(([id, provider]) => ({
       id: id as ProviderId,
       name: provider.name,
-      installed: provider.files.filter(file => exists(cwd, file.dest)).length,
-      missing: provider.files.filter(file => !exists(cwd, file.dest)).map(file => file.dest),
+      installed: provider.files.filter((file) => exists(cwd, file.dest)).length,
+      missing: provider.files.filter((file) => !exists(cwd, file.dest)).map((file) => file.dest),
     }))
-    .filter(provider => provider.installed > 0);
+    .filter((provider) => provider.installed > 0);
 }
 
 export function doctorCommand(): void {
@@ -59,38 +59,47 @@ export function doctorCommand(): void {
     process.exit(1);
   }
 
-  const missingCore = CORE_FILES
-    .map(file => file.dest)
-    .filter(dest => !exists(cwd, dest));
+  const missingCore = CORE_FILES.map((file) => file.dest).filter((dest) => !exists(cwd, dest));
 
-  console.log(`  core files    ${missingCore.length === 0 ? 'ok' : `${missingCore.length} missing`}`);
+  console.log(
+    `  core files    ${missingCore.length === 0 ? 'ok' : `${missingCore.length} missing`}`,
+  );
   for (const missing of missingCore) {
     issues.push(`Missing core file: ${missing}`);
   }
 
   const providers = providerHealth(cwd);
-  console.log(`  providers     ${providers.length > 0 ? providers.map(provider => provider.name).join(', ') : 'none detected'}`);
+  console.log(
+    `  providers     ${providers.length > 0 ? providers.map((provider) => provider.name).join(', ') : 'none detected'}`,
+  );
   if (providers.length === 0) {
-    issues.push('No provider files detected. Run `npx sddx-workflow init --provider <id>` or `npx sddx-workflow init --all`.');
+    issues.push(
+      'No provider files detected. Run `npx sddx-workflow init --provider <id>` or `npx sddx-workflow init --all`.',
+    );
   }
   for (const provider of providers) {
     if (provider.missing.length > 0) {
-      warnings.push(`${provider.name} appears partially installed (${provider.missing.length} missing file${provider.missing.length === 1 ? '' : 's'}). Run \`npx sddx-workflow init --force --provider ${provider.id}\` to reinstall it.`);
+      warnings.push(
+        `${provider.name} appears partially installed (${provider.missing.length} missing file${provider.missing.length === 1 ? '' : 's'}). Run \`npx sddx-workflow init --force --provider ${provider.id}\` to reinstall it.`,
+      );
     }
   }
 
-  const obsolete = OBSOLETE_PATHS.filter(relativePath => exists(cwd, relativePath));
+  const obsolete = OBSOLETE_PATHS.filter((relativePath) => exists(cwd, relativePath));
   console.log(`  obsolete      ${obsolete.length === 0 ? 'none' : `${obsolete.length} found`}`);
   for (const item of obsolete) {
     warnings.push(`Obsolete snapshot/restore file remains: ${item}`);
   }
 
   if (exists(cwd, WORKFLOW_PATH)) {
-    const firstLine = fs.readFileSync(path.join(cwd, WORKFLOW_PATH), 'utf8').split('\n', 1)[0].trim();
+    const firstLine = fs
+      .readFileSync(path.join(cwd, WORKFLOW_PATH), 'utf8')
+      .split('\n', 1)[0]
+      .trim();
     if (!firstLine.startsWith(WORKFLOW_MARKER)) {
       warnings.push(
         `${WORKFLOW_PATH} does not look like an sddx-workflow file (header: "${firstLine.slice(0, 60)}"). ` +
-        'Was it from a different tool? Run `npx sddx-workflow init --force` to replace it.'
+          'Was it from a different tool? Run `npx sddx-workflow init --force` to replace it.',
       );
     }
   }

@@ -21,4 +21,4 @@ export const COMMAND_NAMES = [
   'spec-analyze',
 ] as const;
 
-export type CommandName = typeof COMMAND_NAMES[number];
+export type CommandName = (typeof COMMAND_NAMES)[number];

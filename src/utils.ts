@@ -1,5 +1,5 @@
-import fs from 'fs';
-import path from 'path';
+import fs from 'node:fs';
+import path from 'node:path';
 
 export const TEMPLATES_DIR = path.join(__dirname, '../templates');
 
@@ -14,11 +14,7 @@ export function displayPath(filePath: string): string {
   return relative && !relative.startsWith('..') ? relative : filePath;
 }
 
-export function copyTemplate(
-  src: string,
-  dest: string,
-  force?: boolean,
-): void {
+export function copyTemplate(src: string, dest: string, force?: boolean): void {
   const exists = fs.existsSync(dest);
   if (exists && !force) {
     console.log(`  skip     ${displayPath(dest)}`);

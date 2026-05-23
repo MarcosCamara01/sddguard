@@ -1,7 +1,7 @@
-import fs from 'fs';
-import path from 'path';
-import { copyTemplate, displayPath, TEMPLATES_DIR } from '../utils';
+import fs from 'node:fs';
+import path from 'node:path';
 import { WORKFLOW_FILES } from '../providers';
+import { copyTemplate, displayPath, TEMPLATES_DIR } from '../utils';
 
 interface UpdateOptions {
   dryRun?: boolean;
@@ -19,14 +19,20 @@ export function updateCommand(options: UpdateOptions = {}): void {
 
   if (!fs.existsSync(path.join(cwd, '.sdd'))) {
     console.error('\n  error    No SDD installation found in this directory.');
-    console.error('  next     Run `npx sddx-workflow init` or cd into a project that already has .sdd/.\n');
+    console.error(
+      '  next     Run `npx sddx-workflow init` or cd into a project that already has .sdd/.\n',
+    );
     process.exit(1);
   }
 
   console.log('');
-  console.log(`  SDD Workflow — ${options.check ? 'checking' : options.dryRun ? 'previewing' : 'updating'} workflow files`);
+  console.log(
+    `  SDD Workflow — ${options.check ? 'checking' : options.dryRun ? 'previewing' : 'updating'} workflow files`,
+  );
   console.log('  (project-overview.md, conventions.md, and domains are yours — untouched)');
-  console.log('  (only files that already exist are updated — run `init --force` to add new commands)');
+  console.log(
+    '  (only files that already exist are updated — run `init --force` to add new commands)',
+  );
   console.log('');
 
   let updated = 0;
@@ -60,16 +66,22 @@ export function updateCommand(options: UpdateOptions = {}): void {
 
   console.log('');
   if (options.check) {
-    console.log(`  ${updated === 0 ? 'ok' : 'outdated'}      ${updated} outdated, ${unchanged} current, ${missing} not installed`);
+    console.log(
+      `  ${updated === 0 ? 'ok' : 'outdated'}      ${updated} outdated, ${unchanged} current, ${missing} not installed`,
+    );
     if (updated > 0) process.exit(1);
     console.log('');
     return;
   }
 
   if (options.dryRun) {
-    console.log(`  Preview. ${updated} file${updated !== 1 ? 's' : ''} would be updated, ${unchanged} current, ${missing} not installed.\n`);
+    console.log(
+      `  Preview. ${updated} file${updated !== 1 ? 's' : ''} would be updated, ${unchanged} current, ${missing} not installed.\n`,
+    );
     return;
   }
 
-  console.log(`  Done. ${updated} file${updated !== 1 ? 's' : ''} updated, ${unchanged} current, ${missing} not installed.\n`);
+  console.log(
+    `  Done. ${updated} file${updated !== 1 ? 's' : ''} updated, ${unchanged} current, ${missing} not installed.\n`,
+  );
 }
