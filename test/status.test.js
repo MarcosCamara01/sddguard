@@ -162,3 +162,68 @@ test('status treats invalid verify result as malformed', () => {
   assert.equal(result.status, 0, result.output);
   assertStatusLine(result.stdout, 'invalid-result', 'verify report malformed · 1/1 tasks');
 });
+
+test('status --strict fails on blocking spec states while default status remains dashboard-only', () => {
+  const root = createSddProject({ bootstrapped: true });
+  writeSpec(root, 'clean', {
+    '1-requirements.md': requirements(),
+    '2-plan.md': plan(true),
+    '3-tasks.md': tasks(['- [x] **T1** Done.']),
+    'verify-report.md': verify('PASS'),
+  });
+  writeSpec(root, 'failed-verify', {
+    '1-requirements.md': requirements(),
+    '2-plan.md': plan(true),
+    '3-tasks.md': tasks(['- [x] **T1** Done.']),
+    'verify-report.md': verify('FAIL'),
+  });
+  writeSpec(root, 'malformed-verify', {
+    '1-requirements.md': requirements(),
+    '2-plan.md': plan(true),
+    '3-tasks.md': tasks(['- [x] **T1** Done.']),
+    'verify-report.md': verify(null),
+  });
+  writeSpec(root, 'open-cr-gap', {
+    '1-requirements.md': requirements(),
+    '2-plan.md': plan(true),
+    '3-tasks.md': tasks(['- [x] **T1** Done.']),
+    'verify-report.md': verify('PASS'),
+    'amendments.md': '# Amendments\n\n## CR-001\n\n- **Status:** Pending approval\n',
+    'impl-gaps.md': '# Gaps\n\n## GAP-001\n\n- **Resolution:** pending\n',
+  });
+  writeSpec(root, 'premature-verify', {
+    '1-requirements.md': requirements(),
+    '2-plan.md': plan(true),
+    '3-tasks.md': tasks(['- [ ] **T1** Pending.']),
+    'verify-report.md': verify('PASS'),
+  });
+
+  assert.equal(runCli(['status'], { cwd: root }).status, 0);
+
+  const result = expectCliFail(['status', '--strict'], { cwd: root });
+
+  assert.match(result.stdout, /bootstrap\s+done/);
+  assert.match(result.stderr, /failed-verify: verify-report.md Result is FAIL/);
+  assert.match(result.stderr, /malformed-verify: verify-report.md is malformed/);
+  assert.match(result.stderr, /open-cr-gap: 1 pending CR/);
+  assert.match(result.stderr, /open-cr-gap: 1 unresolved gap/);
+  assert.match(
+    result.stderr,
+    /premature-verify: verify-report.md exists before tasks are complete/,
+  );
+  assert.doesNotMatch(result.stderr, /clean:/);
+});
+
+test('status --strict passes when active specs have no blocking states', () => {
+  const root = createSddProject({ bootstrapped: true });
+  writeSpec(root, 'clean', {
+    '1-requirements.md': requirements(),
+    '2-plan.md': plan(true),
+    '3-tasks.md': tasks(['- [x] **T1** Done.']),
+    'verify-report.md': verify('PASS'),
+  });
+
+  const result = expectCliOk(['status', '--strict'], { cwd: root });
+
+  assert.match(result.stdout, /strict\s+passed/);
+});

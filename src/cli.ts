@@ -3,6 +3,7 @@ import { Command } from 'commander';
 import { addCommand } from './commands/add';
 import { commandsCommand } from './commands/commands';
 import { doctorCommand } from './commands/doctor';
+import { gateCommand } from './commands/gate';
 import { initCommand } from './commands/init';
 import { statusCommand } from './commands/status';
 import { updateCommand } from './commands/update';
@@ -49,8 +50,18 @@ program
   .action(updateCommand);
 
 program
+  .command('gate <phase> <feature>')
+  .description('Check whether an SDD workflow phase may proceed')
+  .addHelpText(
+    'after',
+    '\nExamples:\n  $ sddx-workflow gate spec-tasks auth-refresh\n  $ sddx-workflow gate finish auth-refresh',
+  )
+  .action(gateCommand);
+
+program
   .command('status')
   .description('Show bootstrap status and open specs progress')
+  .option('--strict', 'Exit non-zero when active specs have blocking states')
   .action(statusCommand);
 
 program
@@ -61,6 +72,7 @@ program
 program
   .command('commands')
   .description('List the agent commands defined by the SDD protocol')
+  .option('--installed', 'Show installed command files by detected provider')
   .action(commandsCommand);
 
 program.parseAsync();

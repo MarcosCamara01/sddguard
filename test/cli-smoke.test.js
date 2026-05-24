@@ -19,6 +19,7 @@ test('init --provider codex installs only core and Codex provider files', () => 
   assert.equal(exists(root, '.sdd/workflow.md'), true);
   assert.equal(exists(root, '.sdd/project-overview.md'), true);
   assert.equal(exists(root, '.sdd/conventions.md'), true);
+  assert.equal(exists(root, 'specs/_template/review-report.md'), true);
   assert.equal(exists(root, 'AGENTS.md'), true);
   assert.equal(exists(root, '.agents/skills/bugfix/SKILL.md'), true);
   assert.equal(exists(root, 'CLAUDE.md'), false);
@@ -78,6 +79,44 @@ test('init without force skips existing files, while force preserves project con
   assert.notEqual(readFile(root, '.agents/skills/bugfix/SKILL.md'), 'CUSTOM BUGFIX SKILL\n');
 });
 
+test('init --force preserves provider entrypoints and rules while refreshing command files', () => {
+  const root = makeTempDir('sddx-init-force-provider-entrypoints-');
+  expectCliOk(['init', '--all'], { cwd: root });
+
+  const preservedFiles = [
+    'AGENTS.md',
+    'CLAUDE.md',
+    'GEMINI.md',
+    '.github/copilot-instructions.md',
+    '.cursor/rules/sddx-workflow.mdc',
+    '.windsurf/rules/sddx-workflow.md',
+    '.rules',
+  ];
+  for (const file of preservedFiles) {
+    writeFile(root, file, `CUSTOM ${file}\n`);
+  }
+
+  const refreshedFiles = [
+    '.agents/skills/bugfix/SKILL.md',
+    '.claude/commands/bugfix.md',
+    '.gemini/commands/bugfix.toml',
+    '.github/prompts/bugfix.prompt.md',
+    '.windsurf/workflows/bugfix.md',
+  ];
+  for (const file of refreshedFiles) {
+    writeFile(root, file, `CUSTOM ${file}\n`);
+  }
+
+  expectCliOk(['init', '--force', '--all'], { cwd: root });
+
+  for (const file of preservedFiles) {
+    assert.equal(readFile(root, file), `CUSTOM ${file}\n`);
+  }
+  for (const file of refreshedFiles) {
+    assert.notEqual(readFile(root, file), `CUSTOM ${file}\n`);
+  }
+});
+
 test('update detects drift, repairs existing files, and does not create uninstalled providers or touch project context', () => {
   const root = makeTempDir('sddx-update-');
   expectCliOk(['init', '--provider', 'codex'], { cwd: root });
@@ -87,19 +126,24 @@ test('update detects drift, repairs existing files, and does not create uninstal
   writeFile(root, '.sdd/conventions.md', 'CUSTOM CONVENTIONS\n');
   writeFile(root, '.sdd/domains/auth.md', 'CUSTOM AUTH DOMAIN\n');
   writeFile(root, '.sdd/workflow.md', 'DRIFTED WORKFLOW\n');
+  writeFile(root, 'AGENTS.md', 'CUSTOM CODEX ENTRYPOINT\n');
 
   const check = expectCliFail(['update', '--check'], { cwd: root });
   assert.match(check.stdout, /outdated\s+1 outdated/);
+  assert.match(check.stdout, /1 preserved/);
   assert.match(check.stdout, /update\s+\.sdd\/workflow\.md/);
+  assert.doesNotMatch(check.stdout, /update\s+AGENTS\.md/);
 
   const update = expectCliOk(['update'], { cwd: root });
   assert.match(update.stdout, /Done\. 1 file updated/);
+  assert.match(update.stdout, /1 preserved/);
 
   const clean = expectCliOk(['update', '--check'], { cwd: root });
   assert.match(clean.stdout, /ok\s+0 outdated/);
   assert.equal(readFile(root, '.sdd/project-overview.md'), 'CUSTOM PROJECT CONTEXT\n');
   assert.equal(readFile(root, '.sdd/conventions.md'), 'CUSTOM CONVENTIONS\n');
   assert.equal(readFile(root, '.sdd/domains/auth.md'), 'CUSTOM AUTH DOMAIN\n');
+  assert.equal(readFile(root, 'AGENTS.md'), 'CUSTOM CODEX ENTRYPOINT\n');
   assert.equal(exists(root, '.claude/commands/bugfix.md'), false);
 });
 
@@ -144,8 +188,9 @@ test('doctor reports healthy installs, missing installs, missing core files, and
   const partialRoot = makeTempDir('sddx-doctor-partial-');
   expectCliOk(['init', '--provider', 'codex'], { cwd: partialRoot });
   fs.rmSync(path.join(partialRoot, '.agents/skills/verify/SKILL.md'));
-  const partial = expectCliOk(['doctor'], { cwd: partialRoot });
-  assert.match(partial.stdout, /OpenAI Codex appears partially installed/);
+  const partial = expectCliFail(['doctor'], { cwd: partialRoot });
+  assert.match(partial.stdout, /error\s+OpenAI Codex appears partially installed/);
+  assert.match(partial.stdout, /Run `npx sddx-workflow init --force --provider codex`/);
 });
 
 test('commands lists the static protocol command catalog', () => {
@@ -154,6 +199,26 @@ test('commands lists the static protocol command catalog', () => {
   assert.match(result.stdout, /Agent commands/);
   assert.match(result.stdout, /\/bootstrap/);
   assert.match(result.stdout, /\/spec-analyze/);
+});
+
+test('commands --installed reports command files by detected provider', () => {
+  const root = makeTempDir('sddx-commands-installed-');
+  expectCliOk(['init', '--provider', 'codex'], { cwd: root });
+  fs.rmSync(path.join(root, '.agents/skills/verify/SKILL.md'));
+
+  const result = expectCliOk(['commands', '--installed'], { cwd: root });
+
+  assert.match(result.stdout, /Installed agent commands/);
+  assert.match(result.stdout, /OpenAI Codex/);
+  assert.match(result.stdout, /installed\s+19\/20/);
+  assert.match(result.stdout, /missing\s+\.agents\/skills\/verify\/SKILL\.md/);
+});
+
+test('commands --installed fails outside an SDD installation', () => {
+  const root = makeTempDir('sddx-commands-no-install-');
+  const result = expectCliFail(['commands', '--installed'], { cwd: root });
+
+  assert.match(result.output, /No SDD installation found/);
 });
 
 test('update, status, and add fail clearly outside an SDD installation', () => {

@@ -28,6 +28,7 @@ test('published package contains only the runtime CLI and templates', () => {
     'templates/specs/_template/2-plan.md',
     'templates/specs/_template/3-tasks.md',
     'templates/specs/_template/verify-report.md',
+    'templates/specs/_template/review-report.md',
     'templates/codex-skills/bugfix/SKILL.md',
     'templates/claude-commands/bugfix.md',
     'templates/copilot-prompts/bugfix.prompt.md',

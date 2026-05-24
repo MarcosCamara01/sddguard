@@ -30,11 +30,24 @@ export const CORE_FILES: InstallFile[] = [
   { src: 'specs/_template/amendments.md', dest: 'specs/_template/amendments.md' },
   { src: 'specs/_template/impl-gaps.md', dest: 'specs/_template/impl-gaps.md' },
   { src: 'specs/_template/verify-report.md', dest: 'specs/_template/verify-report.md' },
+  { src: 'specs/_template/review-report.md', dest: 'specs/_template/review-report.md' },
   { src: 'specs/_template/analysis.md', dest: 'specs/_template/analysis.md' },
   { src: 'specs/_template/2a-data-model.md', dest: 'specs/_template/2a-data-model.md' },
   { src: 'specs/_template/2b-api-contracts.md', dest: 'specs/_template/2b-api-contracts.md' },
   { src: 'specs/_template/2c-research.md', dest: 'specs/_template/2c-research.md' },
 ];
+
+export const USER_OWNED_CORE_FILES = new Set(['.sdd/project-overview.md', '.sdd/conventions.md']);
+
+export const USER_OWNED_PROVIDER_FILES = new Set([
+  'AGENTS.md',
+  'CLAUDE.md',
+  'GEMINI.md',
+  '.github/copilot-instructions.md',
+  '.cursor/rules/sddx-workflow.mdc',
+  '.windsurf/rules/sddx-workflow.md',
+  '.rules',
+]);
 
 const claudeCommandFiles = COMMAND_NAMES.map((name) => ({
   src: `claude-commands/${name}.md`,

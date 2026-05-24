@@ -1,5 +1,14 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import {
+  countPendingCrs,
+  countUnresolvedGaps,
+  hasApprovedPlanMarker,
+  hasPlanApprovedLine,
+  readVerifyResult,
+  taskProgress,
+  type VerifyResult,
+} from '../spec-state';
 
 function isBootstrapped(cwd: string): boolean {
   const file = path.join(cwd, '.sdd/project-overview.md');
@@ -20,43 +29,23 @@ interface SpecInfo {
   tasksTotal: number;
   pendingCrs: number;
   unresolvedGaps: number;
+  verifyResult: VerifyResult | null;
 }
 
-interface TaskProgress {
-  done: number;
-  total: number;
+interface StatusOptions {
+  strict?: boolean;
 }
 
-function stripComments(content: string): string {
-  return content.replace(/<!--[\s\S]*?-->/g, '');
-}
-
-function hasApprovedPlanMarker(content: string): boolean {
-  return /^- \[x\]\s+\*\*Approved\*\*/im.test(stripComments(content));
-}
-
-function hasPlanApprovedLine(content: string): boolean {
-  const match = content.match(/^Plan approved:\s*(.+)$/im);
-  return Boolean(match?.[1].trim() && !match[1].includes('<!--'));
-}
-
-function readVerifyResult(content: string): 'PASS' | 'FAIL' | 'MALFORMED' {
-  const result = content.match(/^Result:\s*(PASS|FAIL)\s*$/m)?.[1];
-  return result === 'PASS' || result === 'FAIL' ? result : 'MALFORMED';
-}
-
-function verifyPhase(result: 'PASS' | 'FAIL' | 'MALFORMED'): string {
+function verifyPhase(result: VerifyResult): string {
   if (result === 'PASS') return 'review pending';
   if (result === 'FAIL') return 'verify failed';
   return 'verify report malformed';
 }
 
-function taskProgress(content: string): TaskProgress {
-  const taskMatches = [...content.matchAll(/^- \[(x| )\]\s+\*\*(?:T\d+|Task\b)/gim)];
-  return {
-    done: taskMatches.filter((match) => match[1].toLowerCase() === 'x').length,
-    total: taskMatches.length,
-  };
+function readSpecVerifyResult(specDir: string): VerifyResult | null {
+  const verifyFile = path.join(specDir, 'verify-report.md');
+  if (!fs.existsSync(verifyFile)) return null;
+  return readVerifyResult(fs.readFileSync(verifyFile, 'utf8'));
 }
 
 function isPlanApproved(specDir: string): boolean {
@@ -74,36 +63,16 @@ function isPlanApproved(specDir: string): boolean {
   return false;
 }
 
-function countPendingCrs(specDir: string): number {
-  const file = path.join(specDir, 'amendments.md');
-  if (!fs.existsSync(file)) return 0;
-  const content = stripComments(fs.readFileSync(file, 'utf8'));
-  return (content.match(/\*\*Status:\*\*\s*Pending approval/gi) ?? []).length;
-}
-
-function countUnresolvedGaps(specDir: string): number {
-  const file = path.join(specDir, 'impl-gaps.md');
-  if (!fs.existsSync(file)) return 0;
-  const content = stripComments(fs.readFileSync(file, 'utf8'));
-  const entries = content.split(/^##\s+GAP-\d+/gim).slice(1);
-  return entries.filter((entry) => {
-    const resolution = entry.match(/\*\*Resolution:\*\*\s*(.*)/i);
-    return (
-      !resolution || resolution[1].trim().length === 0 || /filled|pending|tbd/i.test(resolution[1])
-    );
-  }).length;
-}
-
 function inferPhase(
   specDir: string,
   planApproved: boolean,
   tasksDone: number,
   tasksTotal: number,
+  verifyResult: VerifyResult | null,
 ): string {
   const requirementsFile = path.join(specDir, '1-requirements.md');
   const planFile = path.join(specDir, '2-plan.md');
   const tasksFile = path.join(specDir, '3-tasks.md');
-  const verifyFile = path.join(specDir, 'verify-report.md');
 
   if (!fs.existsSync(requirementsFile)) return 'missing requirements';
   if (!fs.existsSync(planFile)) return 'drafting requirements';
@@ -111,10 +80,8 @@ function inferPhase(
   if (!fs.existsSync(tasksFile)) return 'awaiting tasks';
   if (tasksTotal === 0) return 'tasks not planned';
   if (tasksDone < tasksTotal) return 'in /spec-tasks';
-  if (!fs.existsSync(verifyFile)) return 'awaiting /verify';
-
-  const verify = fs.readFileSync(verifyFile, 'utf8');
-  return verifyPhase(readVerifyResult(verify));
+  if (!verifyResult) return 'awaiting /verify';
+  return verifyPhase(verifyResult);
 }
 
 function readSpec(specDir: string): SpecInfo {
@@ -123,16 +90,18 @@ function readSpec(specDir: string): SpecInfo {
   const planApproved = isPlanApproved(specDir);
   const pendingCrs = countPendingCrs(specDir);
   const unresolvedGaps = countUnresolvedGaps(specDir);
+  const verifyResult = readSpecVerifyResult(specDir);
 
   if (!fs.existsSync(tasksFile)) {
     return {
       name,
-      phase: inferPhase(specDir, planApproved, 0, 0),
+      phase: inferPhase(specDir, planApproved, 0, 0, verifyResult),
       planApproved,
       tasksDone: 0,
       tasksTotal: 0,
       pendingCrs,
       unresolvedGaps,
+      verifyResult,
     };
   }
 
@@ -141,16 +110,41 @@ function readSpec(specDir: string): SpecInfo {
 
   return {
     name,
-    phase: inferPhase(specDir, planApproved, tasks.done, tasks.total),
+    phase: inferPhase(specDir, planApproved, tasks.done, tasks.total, verifyResult),
     planApproved,
     tasksDone: tasks.done,
     tasksTotal: tasks.total,
     pendingCrs,
     unresolvedGaps,
+    verifyResult,
   };
 }
 
-export function statusCommand(): void {
+function strictIssues(spec: SpecInfo): string[] {
+  const issues: string[] = [];
+
+  if (spec.verifyResult === 'MALFORMED') {
+    issues.push('verify-report.md is malformed');
+  } else if (spec.verifyResult === 'FAIL') {
+    issues.push('verify-report.md Result is FAIL');
+  }
+
+  if (spec.pendingCrs > 0) {
+    issues.push(`${spec.pendingCrs} pending CR${spec.pendingCrs === 1 ? '' : 's'}`);
+  }
+
+  if (spec.unresolvedGaps > 0) {
+    issues.push(`${spec.unresolvedGaps} unresolved gap${spec.unresolvedGaps === 1 ? '' : 's'}`);
+  }
+
+  if (spec.verifyResult && (spec.tasksTotal === 0 || spec.tasksDone < spec.tasksTotal)) {
+    issues.push('verify-report.md exists before tasks are complete');
+  }
+
+  return issues;
+}
+
+export function statusCommand(options: StatusOptions = {}): void {
   const cwd = process.cwd();
 
   if (!fs.existsSync(path.join(cwd, '.sdd'))) {
@@ -195,6 +189,23 @@ export function statusCommand(): void {
       .join(' · ');
     const suffix = outstanding ? ` · ${outstanding}` : '';
     console.log(`    ${label} ${spec.phase} · ${progress}${suffix}`);
+  }
+
+  if (options.strict) {
+    const issues = specs.flatMap((spec) =>
+      strictIssues(spec).map((issue) => `${spec.name}: ${issue}`),
+    );
+
+    if (issues.length > 0) {
+      console.error('\n  strict    failed');
+      for (const issue of issues) {
+        console.error(`    ${issue}`);
+      }
+      console.error('');
+      process.exit(1);
+    }
+
+    console.log('  strict      passed');
   }
 
   console.log('');

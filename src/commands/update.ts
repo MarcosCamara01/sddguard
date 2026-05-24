@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { WORKFLOW_FILES } from '../providers';
+import { USER_OWNED_PROVIDER_FILES, WORKFLOW_FILES } from '../providers';
 import { copyTemplate, displayPath, TEMPLATES_DIR } from '../utils';
 
 interface UpdateOptions {
@@ -29,7 +29,7 @@ export function updateCommand(options: UpdateOptions = {}): void {
   console.log(
     `  SDD Workflow — ${options.check ? 'checking' : options.dryRun ? 'previewing' : 'updating'} workflow files`,
   );
-  console.log('  (project-overview.md, conventions.md, and domains are yours — untouched)');
+  console.log('  (project context and provider entrypoints/rules are yours — preserved)');
   console.log(
     '  (only files that already exist are updated — run `init --force` to add new commands)',
   );
@@ -37,6 +37,7 @@ export function updateCommand(options: UpdateOptions = {}): void {
 
   let updated = 0;
   let unchanged = 0;
+  let preserved = 0;
   let missing = 0;
 
   for (const file of WORKFLOW_FILES) {
@@ -46,6 +47,11 @@ export function updateCommand(options: UpdateOptions = {}): void {
     // on old installs, as users may not have opted into the new commands.
     if (!fs.existsSync(dest)) {
       missing++;
+      continue;
+    }
+
+    if (USER_OWNED_PROVIDER_FILES.has(file.dest)) {
+      preserved++;
       continue;
     }
 
@@ -67,7 +73,7 @@ export function updateCommand(options: UpdateOptions = {}): void {
   console.log('');
   if (options.check) {
     console.log(
-      `  ${updated === 0 ? 'ok' : 'outdated'}      ${updated} outdated, ${unchanged} current, ${missing} not installed`,
+      `  ${updated === 0 ? 'ok' : 'outdated'}      ${updated} outdated, ${unchanged} current, ${preserved} preserved, ${missing} not installed`,
     );
     if (updated > 0) process.exit(1);
     console.log('');
@@ -76,12 +82,12 @@ export function updateCommand(options: UpdateOptions = {}): void {
 
   if (options.dryRun) {
     console.log(
-      `  Preview. ${updated} file${updated !== 1 ? 's' : ''} would be updated, ${unchanged} current, ${missing} not installed.\n`,
+      `  Preview. ${updated} file${updated !== 1 ? 's' : ''} would be updated, ${unchanged} current, ${preserved} preserved, ${missing} not installed.\n`,
     );
     return;
   }
 
   console.log(
-    `  Done. ${updated} file${updated !== 1 ? 's' : ''} updated, ${unchanged} current, ${missing} not installed.\n`,
+    `  Done. ${updated} file${updated !== 1 ? 's' : ''} updated, ${unchanged} current, ${preserved} preserved, ${missing} not installed.\n`,
   );
 }

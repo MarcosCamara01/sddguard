@@ -8,6 +8,8 @@ import {
   PROVIDERS,
   type ProviderId,
   parseProviderList,
+  USER_OWNED_CORE_FILES,
+  USER_OWNED_PROVIDER_FILES,
 } from '../providers';
 import { copyTemplate, ensureDir } from '../utils';
 
@@ -59,8 +61,6 @@ function formatList(items: string[]): string {
   return items.length > 0 ? items.join(', ') : 'none';
 }
 
-const USER_OWNED_CORE_FILES = new Set(['.sdd/project-overview.md', '.sdd/conventions.md']);
-
 export async function initCommand(options: InitOptions): Promise<void> {
   const cwd = process.cwd();
   const { force, existing } = options;
@@ -93,7 +93,8 @@ export async function initCommand(options: InitOptions): Promise<void> {
 
   for (const id of selectedProviders) {
     for (const file of PROVIDERS[id].files) {
-      copyTemplate(file.src, path.join(cwd, file.dest), force);
+      const shouldForce = force && !USER_OWNED_PROVIDER_FILES.has(file.dest);
+      copyTemplate(file.src, path.join(cwd, file.dest), shouldForce);
     }
   }
 

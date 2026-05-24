@@ -79,7 +79,7 @@ export function doctorCommand(): void {
   }
   for (const provider of providers) {
     if (provider.missing.length > 0) {
-      warnings.push(
+      issues.push(
         `${provider.name} appears partially installed (${provider.missing.length} missing file${provider.missing.length === 1 ? '' : 's'}). Run \`npx sddx-workflow init --force --provider ${provider.id}\` to reinstall it.`,
       );
     }

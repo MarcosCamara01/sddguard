@@ -8,6 +8,10 @@ function commandNames() {
   return [...source.matchAll(/'([^']+)'/g)].map((match) => match[1]);
 }
 
+function canonicalWorkflowInstruction(name) {
+  return `Execute the /${name} command defined in .sdd/workflow.md.`;
+}
+
 test('every command-aware provider has exactly one file per command', () => {
   const names = commandNames();
   const providers = {
@@ -46,10 +50,14 @@ test('every command-aware provider has exactly one file per command', () => {
     assert.deepEqual(installed, expected, `${provider} command list drifted`);
 
     for (const name of names) {
-      assert.equal(
-        fs.existsSync(path.join(providerDir, config.fileFor(name))),
-        true,
-        `${provider} is missing ${name}`,
+      const file = path.join(providerDir, config.fileFor(name));
+
+      assert.equal(fs.existsSync(file), true, `${provider} is missing ${name}`);
+
+      const content = fs.readFileSync(file, 'utf8');
+      assert.ok(
+        content.includes(canonicalWorkflowInstruction(name)),
+        `${provider} ${name} does not reference its canonical workflow instruction`,
       );
     }
   }
@@ -73,4 +81,14 @@ test('entry and rule files mention every protocol command', () => {
     const missing = names.filter((name) => !content.includes(name));
     assert.deepEqual(missing, [], `${file} does not mention every command`);
   }
+});
+
+test('plan template defines structured components for exact conflict checks', () => {
+  const plan = fs.readFileSync(path.join(repoRoot, 'templates/specs/_template/2-plan.md'), 'utf8');
+  const workflow = fs.readFileSync(path.join(repoRoot, 'templates/workflow.md'), 'utf8');
+
+  assert.match(plan, /\| Exact path \| Role \| Notes \|/);
+  assert.match(workflow, /`Exact path`, `Role`, and `Notes`/);
+  assert.match(workflow, /Use only exact paths from the `Exact path` column/);
+  assert.match(workflow, /Do not infer conflicts from prose/);
 });
