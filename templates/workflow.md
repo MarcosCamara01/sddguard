@@ -241,7 +241,7 @@ The plan must include:
 - Explicit assumptions — confirmed via /assume before drafting
 - The simplest viable approach and why it was chosen or rejected
 - Tradeoffs — conscious sacrifices the chosen approach makes (write "none" if there are none)
-- Components affected (files, modules, services)
+- Components affected as a Markdown table with columns `Exact path`, `Role`, and `Notes`
 - New artifacts (files, types, schemas, migrations)
 - What the plan explicitly does NOT do (mirrors non-goals)
 - External dependencies, if any
@@ -350,7 +350,7 @@ Checks (deterministic, listed in the report):
 - Every goal (G1, G2…) in `1-requirements.md` has at least one task that references it and at least one observable artifact (file change, test, route)
 - Every acceptance scenario in `1-requirements.md` has a corresponding passing test
 - Test suite passes (full suite, not only new tests)
-- No files were modified outside the components listed in `2-plan.md` "Components Affected"
+- No files were modified outside the exact paths listed with write roles in `2-plan.md` "Components Affected"
 - No outstanding `/impl-gap` entries marked unresolved
 - No outstanding `/spec-amend` CRs in "Pending approval" status
 
@@ -366,7 +366,7 @@ Rules:
 ---
 
 ### /review
-**Purpose:** Lighter human-touch final pass after `/verify`.
+**Purpose:** Lighter human-touch final pass after `/verify`. Produces a durable review report.
 
 Use after `/verify` reports green (or after explicit acknowledgement of remaining warnings).
 
@@ -377,14 +377,15 @@ Focus:
 - Confirm that the implementation feels like the simplest one that satisfies the requirements
 
 Rules:
-- This is a recommendation-only pass — `/review` notes issues but does not apply code/spec changes, except the advisory ack below
-- If `/review` finds a structural issue, escalate to `/spec-amend`
-- If `/review` finds minor follow-ups (naming, dead comment, etc.), record them as notes for the user to act on — file a separate `/bugfix` task if the user accepts them
-- `/review` never edits code directly or any spec file beyond the advisory ack below
-- If `/review` proceeds with acknowledged warnings (rather than a green
-  /verify), append a one-line postscript to `verify-report.md` "Advisory"
-  recording the date and the warning(s) explicitly acknowledged. This is the
-  only allowed write, and keeps the audit trail intact across sessions.
+- This is a recommendation-only pass — `/review` writes `review-report.md` but does not apply code or spec changes
+- If `/review` finds a structural issue, set `Result: ESCALATED`, name the required `/spec-amend` or `/bugfix` path, and stop before editing anything else
+- If `/review` finds minor follow-ups (naming, dead comment, etc.), record them in `review-report.md` for the user to act on — file a separate `/bugfix` task if the user accepts them
+- `/review` never edits code directly or any spec file beyond `review-report.md`
+- If `/review` proceeds with acknowledged warnings (rather than a green `/verify`), record the date and acknowledged warning(s) in `review-report.md`
+
+Output: `specs/<feature>/review-report.md`.
+
+The report's header MUST include a `Result:` line with exactly `PASS`, `FOLLOW_UPS`, or `ESCALATED`.
 
 ---
 
@@ -411,13 +412,15 @@ Rules:
 **Purpose:** Detect file-level conflicts between active specs.
 
 Process:
-1. For each active spec, read `2-plan.md` "Components Affected"
-2. Cross-reference: any file listed by two or more specs is a potential conflict
-3. Print a table: File | Specs touching it | Recommendation (sequence them, merge plans, or escalate)
+1. For each active spec, read the `2-plan.md` "Components Affected" table
+2. Use only exact paths from the `Exact path` column; preserve each row's `Role`
+3. Cross-reference: any exact path listed by two or more active specs with write roles (`New` or `Modified`) is a potential conflict
+4. Print a table: Exact path | Specs touching it | Role(s) | Recommendation (sequence them, merge plans, or escalate)
 
 Rules:
 - Detection only — resolution is always human-decided
-- "Components Affected" is the source of truth; if a plan understates its surface, conflicts will be missed (user education, not enforcement)
+- Do not infer conflicts from prose, `Notes`, directory names, globs, imports, or task text
+- "Components Affected" exact paths are the source of truth; if a plan understates its surface, conflicts will be missed (user education, not enforcement)
 - Specs whose `3-tasks.md` is fully checked (all `[x]`) are excluded even if
   not yet moved to `_done/` — moving is a human action and conflict detection
   should not block on it.
@@ -539,7 +542,7 @@ This table formalizes what the agent may read, edit, or create in each phase. Do
 | /impl-gap | ✓ | ✓ (only `impl-gaps.md`) | ✗ | Gap report only |
 | /spec-amend | ✓ | ✓ (with CR approval) | ✗ | CR record |
 | /verify | ✓ | ✗ | ✗ | Only `verify-report.md` |
-| /review | ✓ | ✓ (only `verify-report.md` Advisory ack) | ✗ | None — notes only |
+| /review | ✓ | ✗ | ✗ | Only `review-report.md` |
 | /spec-status, /spec-conflicts | ✓ | ✗ | ✗ | None (output is conversational) |
 | /spec-analyze | ✓ | ✗ | ✗ | Only `analysis.md` |
 | /bugfix | ✓ | ✗ | ✓ | Tests + fix |

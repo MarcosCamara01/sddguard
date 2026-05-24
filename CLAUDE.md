@@ -16,11 +16,11 @@ This project uses the SDD Protocol. Read these files before starting any task:
 | Discovery-only scan, no `.sdd/` writes | `/scan` |
 | Refresh conventions from current project state | `/conventions-sync` |
 
-### Exploration
+### Exploration and research artifacts
 | Intent | Command |
 |---|---|
-| Research / ask without changing anything | `/ask` |
-| Non-binding research artifact for a topic | `/research` |
+| Research / ask without changing files | `/ask` |
+| Compare options; may write research artifacts, not code | `/research` |
 | Surface and validate assumptions | `/assume` |
 
 ### Feature flow
@@ -34,7 +34,7 @@ This project uses the SDD Protocol. Read these files before starting any task:
 | Document a Change Request for spec edits | `/spec-amend` |
 | Cross-consistency analysis | `/spec-analyze` |
 | Strict mechanical audit | `/verify` |
-| Lighter human-touch final pass | `/review` |
+| Lighter human-touch final pass (writes `review-report.md`) | `/review` |
 | Stage and commit | `/finish` |
 
 ### Multi-spec awareness
@@ -75,7 +75,7 @@ What context to load before running each command. Skip the rest — context budg
 | `/spec-clarify`, `/spec-plan`, `/spec-tasks` | `specs/<feature>/*.md`, `.sdd/conventions.md`, `.sdd/project-overview.md` | Relevant domain file `.sdd/domains/<x>.md` |
 | `/impl-gap` | `specs/<feature>/2-plan.md`, `specs/<feature>/3-tasks.md` | The current task code under work |
 | `/verify`, `/spec-analyze` | All `specs/<feature>/*.md`, files listed in "Components Affected" | Prior `verify-report.md` / `analysis.md` |
-| `/review` | `verify-report.md`, all changed files | `2-plan.md` tradeoffs section |
+| `/review` | `verify-report.md`, all changed files | Existing `review-report.md` if rerunning; `2-plan.md` tradeoffs section |
 | `/bugfix` | Test suite root, the failing path | `.sdd/conventions.md` |
 | `/refactor` | Target files, their tests, callers | — |
 | `/conventions-sync` | `.sdd/conventions.md`, `package.json`, lint/format configs | — |

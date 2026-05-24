@@ -63,12 +63,17 @@
 
 ## Components Affected
 
-<!-- Every file that will be modified. Distinguish writes from read-only references.
+<!-- Every file that will be modified or deliberately inspected. Use exact
+     repo-relative paths only; no prose-only entries, directory summaries, or globs.
+     Role must be New, Modified, or Reference. /spec-conflicts reads the Exact path
+     column, so keep one path per row. -->
 
-     New:      app/api/files/[id]/access/route.ts
-     Modified: components/file-manager/itemButton.tsx — call recordFileAccess on open
-     Modified: components/file-manager/FileInfoModal.tsx — add "Last opened" row
-     Reference (no changes): lib/db/schema.ts — verify column type only -->
+| Exact path | Role | Notes |
+|---|---|---|
+| `app/api/files/[id]/access/route.ts` | New | Add access-recording endpoint |
+| `components/file-manager/itemButton.tsx` | Modified | Call recordFileAccess on open |
+| `components/file-manager/FileInfoModal.tsx` | Modified | Add "Last opened" row |
+| `lib/db/schema.ts` | Reference | Verify column type only; no changes |
 
 ## New Artifacts
 

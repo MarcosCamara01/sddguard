@@ -41,12 +41,6 @@ Result: <PASS|FAIL>
 
 ---
 
-## Advisory
-
-<!-- If /review proceeds with acknowledged warnings, append one dated postscript here. -->
-
----
-
 ## Conclusion
 
 <!-- One sentence summary. If `Result: FAIL`, name each failing check and the artifact needed to resolve it. -->

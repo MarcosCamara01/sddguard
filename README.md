@@ -26,7 +26,7 @@ After install, the workflow happens inside your AI agent:
 /spec-plan auth-refresh      # stops for your approval before any code
 /spec-tasks auth-refresh     # executes one task at a time
 /verify auth-refresh         # mechanical audit — writes verify-report.md
-/review auth-refresh         # qualitative final pass
+/review auth-refresh         # qualitative final pass — writes review-report.md
 /finish                      # stage files + propose a commit message
 ```
 
@@ -78,7 +78,7 @@ npx sddx-workflow init
 /spec-plan auth-refresh     # STOPS for your approval before any code
 /spec-tasks auth-refresh    # executes task by task
 /verify auth-refresh        # mechanical audit — writes verify-report.md
-/review auth-refresh        # qualitative final pass
+/review auth-refresh        # qualitative final pass — writes review-report.md
 /finish                     # stage files + propose a commit message
 ```
 
@@ -122,11 +122,11 @@ npx sddx-workflow init --existing
 | `/scan` | Discovery-only pass — writes `scan-report.md`, no `.sdd/` changes |
 | `/conventions-sync` | Refresh `.sdd/conventions.md`, preserving `<!-- manual -->` sections |
 
-### Exploration (read-only)
+### Exploration and research artifacts
 | Command | Purpose |
 |---|---|
-| `/ask` | Research and explanation — never modifies anything |
-| `/research` | Compare libraries/patterns → non-binding `research-<topic>.md` |
+| `/ask` | Research and explanation — never modifies files |
+| `/research` | Compare libraries/patterns — writes only non-binding `research-<topic>.md`, never code |
 | `/assume` | Surface every assumption and stop until they're confirmed |
 
 ### Feature flow
@@ -140,7 +140,7 @@ npx sddx-workflow init --existing
 | `/spec-amend` | Documented Change Request to edit an already-approved spec |
 | `/spec-analyze` | Cross-consistency check: goals↔tasks, plan↔tasks, scope creep |
 | `/verify` | Strict mechanical audit — read-only `verify-report.md` |
-| `/review` | Lighter qualitative pass — naming, clarity, simplicity |
+| `/review` | Lighter qualitative pass — writes `review-report.md` |
 | `/finish` | Stage files + draft a conventional commit message (stops to confirm) |
 
 ### Multi-spec awareness
@@ -157,7 +157,8 @@ npx sddx-workflow init --existing
 
 **`/verify` vs `/review`:** `/verify` is the deterministic audit (tasks complete,
 goals covered, suite green, no out-of-scope edits, no open gaps/CRs). `/review` is the
-qualitative human-touch pass. Both are read-only — neither edits code or specs.
+qualitative human-touch pass, recorded in `review-report.md`. Both avoid code/spec
+edits except for their report outputs.
 
 ---
 
@@ -169,7 +170,7 @@ npx sddx-workflow init --provider codex # install only one provider integration
 npx sddx-workflow init --provider codex,gemini
 npx sddx-workflow init --all            # install every provider integration
 npx sddx-workflow init --existing       # brownfield: next steps start with /scan
-npx sddx-workflow init --force          # overwrite existing protocol files
+npx sddx-workflow init --force          # refresh protocol files, preserving project context
 
 npx sddx-workflow add domain auth       # add a built-in domain template
                                         # built-in: auth, payments, storage, email
@@ -192,13 +193,14 @@ edit freely.
 
 ## Updating an existing install
 
-`sddx-workflow update` refreshes workflow files that **already exist** in your
-project. It does not silently create newly introduced provider commands in older
-installs, because that could surprise teams that customized their local workflow.
+`sddx-workflow update` refreshes managed workflow and command files that
+**already exist** in your project. It preserves project context and provider
+entrypoints/rules, and it does not silently create newly introduced provider
+commands in older installs.
 
 | Need | Command |
 |---|---|
-| Refresh files you already have | `sddx-workflow update` |
+| Refresh managed files you already have | `sddx-workflow update` |
 | List protocol command catalog | `sddx-workflow commands` |
 | Preview template updates | `sddx-workflow update --dry-run` |
 | Fail CI when templates are outdated | `sddx-workflow update --check` |
@@ -207,8 +209,9 @@ installs, because that could surprise teams that customized their local workflow
 | Check installation health | `sddx-workflow doctor` |
 
 `update` and `init --force` never touch `project-overview.md`, `conventions.md`,
-or `domains/`. Before `init --force`, review local changes to provider command files,
-`CLAUDE.md`, and `AGENTS.md`.
+`domains/`, or provider entrypoints/rules such as `AGENTS.md`, `CLAUDE.md`,
+`GEMINI.md`, Copilot instructions, Cursor/Windsurf rules, and `.rules`.
+Before `init --force`, review local changes to provider command files.
 
 ---
 
@@ -232,6 +235,7 @@ specs/
     impl-gaps.md         #   blocking gaps logged during execution (/impl-gap)
     analysis.md          #   /spec-analyze output
     verify-report.md     #   /verify output
+    review-report.md     #   /review output
   _done/                 # shipped specs, moved here after verify + review close
 CLAUDE.md                # agent entry point — points at .sdd/
 ```
@@ -239,7 +243,7 @@ CLAUDE.md                # agent entry point — points at .sdd/
 - **You edit:** `project-overview.md`, `conventions.md`, and per-feature
   `1-requirements.md` / `2-plan.md` / `3-tasks.md`.
 - **The agent generates as history/reports:** `amendments.md`, `impl-gaps.md`,
-  `analysis.md`, and `verify-report.md`.
+  `analysis.md`, `verify-report.md`, and `review-report.md`.
 
 Per selected agent, command files are also installed (see Provider support).
 
@@ -254,7 +258,8 @@ The agent may draft plans and reports, but structural decisions stay with the hu
 - `/impl-gap` records a blocker and waits for direction — no improvising.
 - `/spec-amend` records a Change Request and waits for approval before changing
   `1-requirements.md` or `2-plan.md`.
-- `/verify` and `/review` are read-only, except for their report output.
+- `/verify` and `/review` are read-only, except for `verify-report.md` and
+  `review-report.md`.
 
 ---
 

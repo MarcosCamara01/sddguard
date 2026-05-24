@@ -17,11 +17,11 @@ This project uses the SDD Protocol. Before starting any task, read:
 | `/scan` | Discovery-only pass over an existing codebase |
 | `/conventions-sync` | Refresh conventions, preserving manual sections |
 
-### Exploration
+### Exploration and research artifacts
 | Command | Purpose |
 |---|---|
 | `/ask` | Research only — no code changes |
-| `/research` | Non-binding research artifact |
+| `/research` | Writes research artifact only — no code changes |
 | `/assume` | List assumptions and stop for confirmation |
 
 ### Feature flow
@@ -35,7 +35,7 @@ This project uses the SDD Protocol. Before starting any task, read:
 | `/spec-amend` | Documented Change Request |
 | `/spec-analyze` | Cross-consistency analysis |
 | `/verify` | Strict mechanical audit |
-| `/review` | Lighter human-touch final pass |
+| `/review` | Lighter human-touch final pass — writes `review-report.md` |
 | `/finish` | Stage files and generate commit message |
 
 ### Multi-spec

@@ -17,11 +17,11 @@ Use these slash commands in Copilot Chat (type `/` to see them):
 | `/scan` | Discovery-only pass — writes `scan-report.md`, no `.sdd/` |
 | `/conventions-sync` | Refresh `.sdd/conventions.md`, preserving manual sections |
 
-### Exploration
+### Exploration and research artifacts
 | Command | Purpose |
 |---|---|
 | `/ask` | Research only — no code changes |
-| `/research` | Non-binding research artifact for a topic |
+| `/research` | Writes research artifact only — no code changes |
 | `/assume` | List assumptions and stop for confirmation |
 
 ### Feature flow
@@ -35,7 +35,7 @@ Use these slash commands in Copilot Chat (type `/` to see them):
 | `/spec-amend` | Documented Change Request for post-approval edits |
 | `/spec-analyze` | Cross-consistency analysis — writes `analysis.md` |
 | `/verify` | Strict mechanical audit — read-only |
-| `/review` | Lighter human-touch final pass |
+| `/review` | Lighter human-touch final pass — writes `review-report.md` |
 | `/finish` | Stage files and generate commit message |
 
 ### Multi-spec

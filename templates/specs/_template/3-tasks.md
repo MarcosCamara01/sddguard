@@ -50,5 +50,5 @@ Plan approved: <!-- date -->
 - [ ] All tasks done
 - [ ] Every acceptance scenario in 1-requirements.md covered by a passing test
 - [ ] /verify completed
-- [ ] /review completed
+- [ ] /review completed with `review-report.md`
 - [ ] Spec moved to `specs/_done/<name>/`
